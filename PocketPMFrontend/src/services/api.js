@@ -1,10 +1,10 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-// For local development - your backend running on localhost:3001
-const BASE_URL = 'http://localhost:3001';
-// For production - uncomment this line when deploying:
-// const BASE_URL = 'https://pocketpmclaude-production.up.railway.app';
+// Production backend on Railway
+const BASE_URL = 'https://pocketpmclaude-production.up.railway.app';
+// For local development - uncomment this line when testing locally:
+// const BASE_URL = 'http://localhost:3001';
 
 class ApiService {
   constructor() {
