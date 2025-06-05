@@ -9,6 +9,14 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3001;
 
+console.log('🚀 Starting Pocket PM Backend...');
+console.log('📊 Environment:', process.env.NODE_ENV);
+console.log('🔌 Port:', port);
+console.log('🔑 Environment variables check:');
+console.log('  - DATABASE_URL:', process.env.DATABASE_URL ? '✅ Set' : '❌ Missing');
+console.log('  - OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? '✅ Set' : '❌ Missing');
+console.log('  - JWT_SECRET:', process.env.JWT_SECRET ? '✅ Set' : '❌ Missing');
+
 // Database connection with Railway-specific configuration
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -51,13 +59,9 @@ async function connectWithRetry() {
   }
   
   console.error('💥 Failed to connect to database after', maxRetries, 'attempts');
+  console.log('⚠️  Server will continue without database connection');
   return false;
 }
-
-// Initialize database connection
-connectWithRetry().then(() => {
-  createUsersTable();
-});
 
 // Create users table if it doesn't exist
 async function createUsersTable() {
@@ -77,6 +81,15 @@ async function createUsersTable() {
   }
 }
 
+// Initialize database connection (but don't block server startup)
+connectWithRetry().then((connected) => {
+  if (connected) {
+    createUsersTable();
+  }
+}).catch((err) => {
+  console.error('❌ Database initialization failed:', err);
+});
+
 // Authentication middleware
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -84,6 +97,10 @@ const authenticateToken = (req, res, next) => {
 
   if (!token) {
     return res.status(401).json({ error: 'Access token required' });
+  }
+
+  if (!process.env.JWT_SECRET) {
+    return res.status(500).json({ error: 'Server configuration error: JWT_SECRET not set' });
   }
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
@@ -115,7 +132,24 @@ app.get('/health', async (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
     database: dbStatus,
-    port: port
+    port: port,
+    version: '1.0.0'
+  });
+});
+
+// Simple root route
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Pocket PM Backend API',
+    version: '1.0.0',
+    status: 'Running',
+    endpoints: {
+      health: '/health',
+      register: 'POST /api/register',
+      login: 'POST /api/login',
+      analyze: 'POST /api/analyze',
+      user: 'GET /api/user'
+    }
   });
 });
 
@@ -232,6 +266,10 @@ app.post('/api/analyze', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Product idea is required' });
     }
 
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: 'OpenAI API key not configured' });
+    }
+
     // Prepare the prompt for OpenAI
     const prompt = `As a senior product manager and startup advisor, analyze the following product idea and provide a comprehensive analysis:
 
@@ -343,7 +381,7 @@ app.get('/api/user', authenticateToken, async (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Unhandled error:', err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
@@ -352,8 +390,10 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-app.listen(port, () => {
+// Start server
+app.listen(port, '0.0.0.0', () => {
   console.log(`🚀 Pocket PM Backend running on port ${port}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Health check: http://localhost:${port}/health`);
+  console.log('✅ Server is ready to accept connections');
 }); 
