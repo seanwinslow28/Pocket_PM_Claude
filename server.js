@@ -12,83 +12,51 @@ const port = process.env.PORT || 3001;
 console.log('🚀 Starting Pocket PM Backend...');
 console.log('📊 Environment:', process.env.NODE_ENV);
 console.log('🔌 Port:', port);
-console.log('🔑 Environment variables check:');
-console.log('  - DATABASE_URL:', process.env.DATABASE_URL ? '✅ Set' : '❌ Missing');
-console.log('  - OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? '✅ Set' : '❌ Missing');
-console.log('  - JWT_SECRET:', process.env.JWT_SECRET ? '✅ Set' : '❌ Missing');
-
-// Database connection with Railway-specific configuration
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  // Railway-specific configurations
-  connectionTimeoutMillis: 10000,
-  idleTimeoutMillis: 30000,
-  max: 10,
-  // Handle Railway's internal network
-  host: process.env.DATABASE_URL ? undefined : 'postgres.railway.internal',
-  port: process.env.DATABASE_URL ? undefined : 5432,
-  database: process.env.DATABASE_URL ? undefined : 'railway',
-  user: process.env.DATABASE_URL ? undefined : 'postgres',
-  password: process.env.DATABASE_URL ? undefined : process.env.PGPASSWORD
-});
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Test database connection with retry logic
-async function connectWithRetry() {
-  const maxRetries = 5;
-  let retries = 0;
+// Simple startup test - server will start regardless of database
+console.log('✅ Basic server setup complete');
+
+// Database connection - only initialize if DATABASE_URL exists
+let pool = null;
+if (process.env.DATABASE_URL) {
+  console.log('🔗 DATABASE_URL found, initializing database connection...');
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    connectionTimeoutMillis: 10000,
+    idleTimeoutMillis: 30000,
+    max: 10
+  });
   
-  while (retries < maxRetries) {
-    try {
-      const client = await pool.connect();
-      console.log('✅ Connected to PostgreSQL database');
+  // Test connection
+  pool.connect()
+    .then(client => {
+      console.log('✅ Database connected successfully');
       client.release();
-      return true;
-    } catch (err) {
-      console.error(`❌ Database connection attempt ${retries + 1} failed:`, err.message);
-      retries++;
-      if (retries < maxRetries) {
-        console.log(`⏳ Retrying in ${retries * 2} seconds...`);
-        await new Promise(resolve => setTimeout(resolve, retries * 2000));
-      }
-    }
-  }
-  
-  console.error('💥 Failed to connect to database after', maxRetries, 'attempts');
-  console.log('⚠️  Server will continue without database connection');
-  return false;
+      // Create users table
+      return pool.query(`
+        CREATE TABLE IF NOT EXISTS users (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          password_hash VARCHAR(255) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+    })
+    .then(() => {
+      console.log('✅ Users table ready');
+    })
+    .catch(err => {
+      console.error('❌ Database connection failed:', err.message);
+    });
+} else {
+  console.log('⚠️  No DATABASE_URL found - database features disabled');
 }
-
-// Create users table if it doesn't exist
-async function createUsersTable() {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password_hash VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    console.log('✅ Users table ready');
-  } catch (error) {
-    console.error('❌ Error creating users table:', error.message);
-  }
-}
-
-// Initialize database connection (but don't block server startup)
-connectWithRetry().then((connected) => {
-  if (connected) {
-    createUsersTable();
-  }
-}).catch((err) => {
-  console.error('❌ Database initialization failed:', err);
-});
 
 // Authentication middleware
 const authenticateToken = (req, res, next) => {
@@ -114,37 +82,21 @@ const authenticateToken = (req, res, next) => {
 
 // Routes
 
-// Health check with database status
-app.get('/health', async (req, res) => {
-  let dbStatus = 'Unknown';
-  
-  try {
-    const client = await pool.connect();
-    await client.query('SELECT 1');
-    client.release();
-    dbStatus = 'Connected';
-  } catch (error) {
-    dbStatus = 'Disconnected: ' + error.message;
-  }
-  
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    database: dbStatus,
-    port: port,
-    version: '1.0.0'
-  });
-});
-
-// Simple root route
+// Root endpoint
 app.get('/', (req, res) => {
   res.json({
     message: 'Pocket PM Backend API',
     version: '1.0.0',
     status: 'Running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    features: {
+      database: !!pool,
+      jwt: !!process.env.JWT_SECRET,
+      openai: !!process.env.OPENAI_API_KEY
+    },
     endpoints: {
-      health: '/health',
+      health: 'GET /health',
       register: 'POST /api/register',
       login: 'POST /api/login',
       analyze: 'POST /api/analyze',
@@ -153,8 +105,42 @@ app.get('/', (req, res) => {
   });
 });
 
+// Health check
+app.get('/health', async (req, res) => {
+  let dbStatus = 'Not configured';
+  
+  if (pool) {
+    try {
+      const client = await pool.connect();
+      await client.query('SELECT 1');
+      client.release();
+      dbStatus = 'Connected';
+    } catch (error) {
+      dbStatus = 'Error: ' + error.message;
+    }
+  }
+  
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    database: dbStatus,
+    port: port,
+    version: '1.0.0',
+    uptime: process.uptime()
+  });
+});
+
 // Register user
 app.post('/api/register', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ error: 'Database not available' });
+  }
+
+  if (!process.env.JWT_SECRET) {
+    return res.status(500).json({ error: 'JWT_SECRET not configured' });
+  }
+
   try {
     const { name, email, password } = req.body;
 
@@ -205,12 +191,20 @@ app.post('/api/register', async (req, res) => {
 
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error: ' + error.message });
   }
 });
 
 // Login user
 app.post('/api/login', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ error: 'Database not available' });
+  }
+
+  if (!process.env.JWT_SECRET) {
+    return res.status(500).json({ error: 'JWT_SECRET not configured' });
+  }
+
   try {
     const { email, password } = req.body;
 
@@ -253,21 +247,21 @@ app.post('/api/login', async (req, res) => {
 
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error: ' + error.message });
   }
 });
 
 // AI Analysis endpoint
 app.post('/api/analyze', authenticateToken, async (req, res) => {
+  if (!process.env.OPENAI_API_KEY) {
+    return res.status(500).json({ error: 'OpenAI API key not configured' });
+  }
+
   try {
     const { idea } = req.body;
 
     if (!idea || idea.trim().length === 0) {
       return res.status(400).json({ error: 'Product idea is required' });
-    }
-
-    if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({ error: 'OpenAI API key not configured' });
     }
 
     // Prepare the prompt for OpenAI
@@ -351,15 +345,19 @@ Please be specific, actionable, and include relevant examples where applicable.`
     console.error('Analysis error:', error);
     
     if (error.message.includes('OpenAI API')) {
-      res.status(500).json({ error: 'AI analysis service temporarily unavailable' });
+      res.status(500).json({ error: 'AI analysis service temporarily unavailable: ' + error.message });
     } else {
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({ error: 'Internal server error: ' + error.message });
     }
   }
 });
 
 // Get current user (protected route)
 app.get('/api/user', authenticateToken, async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ error: 'Database not available' });
+  }
+
   try {
     const result = await pool.query(
       'SELECT id, name, email, created_at FROM users WHERE id = $1',
@@ -375,14 +373,14 @@ app.get('/api/user', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Get user error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error: ' + error.message });
   }
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+  res.status(500).json({ error: 'Something went wrong: ' + err.message });
 });
 
 // 404 handler
@@ -391,9 +389,20 @@ app.use((req, res) => {
 });
 
 // Start server
-app.listen(port, '0.0.0.0', () => {
+const server = app.listen(port, '0.0.0.0', () => {
   console.log(`🚀 Pocket PM Backend running on port ${port}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Health check: http://localhost:${port}/health`);
   console.log('✅ Server is ready to accept connections');
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('✅ Process terminated');
+    if (pool) {
+      pool.end();
+    }
+  });
 }); 
