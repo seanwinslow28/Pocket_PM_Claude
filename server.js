@@ -9,24 +9,54 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3001;
 
-// Database connection
+// Database connection with Railway-specific configuration
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  // Railway-specific configurations
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
+  max: 10,
+  // Handle Railway's internal network
+  host: process.env.DATABASE_URL ? undefined : 'postgres.railway.internal',
+  port: process.env.DATABASE_URL ? undefined : 5432,
+  database: process.env.DATABASE_URL ? undefined : 'railway',
+  user: process.env.DATABASE_URL ? undefined : 'postgres',
+  password: process.env.DATABASE_URL ? undefined : process.env.PGPASSWORD
 });
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Test database connection
-pool.connect((err, client, release) => {
-  if (err) {
-    console.error('Error acquiring client', err.stack);
-  } else {
-    console.log('Connected to PostgreSQL database');
-    release();
+// Test database connection with retry logic
+async function connectWithRetry() {
+  const maxRetries = 5;
+  let retries = 0;
+  
+  while (retries < maxRetries) {
+    try {
+      const client = await pool.connect();
+      console.log('✅ Connected to PostgreSQL database');
+      client.release();
+      return true;
+    } catch (err) {
+      console.error(`❌ Database connection attempt ${retries + 1} failed:`, err.message);
+      retries++;
+      if (retries < maxRetries) {
+        console.log(`⏳ Retrying in ${retries * 2} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, retries * 2000));
+      }
+    }
   }
+  
+  console.error('💥 Failed to connect to database after', maxRetries, 'attempts');
+  return false;
+}
+
+// Initialize database connection
+connectWithRetry().then(() => {
+  createUsersTable();
 });
 
 // Create users table if it doesn't exist
@@ -41,13 +71,11 @@ async function createUsersTable() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    console.log('Users table ready');
+    console.log('✅ Users table ready');
   } catch (error) {
-    console.error('Error creating users table:', error);
+    console.error('❌ Error creating users table:', error.message);
   }
 }
-
-createUsersTable();
 
 // Authentication middleware
 const authenticateToken = (req, res, next) => {
@@ -69,12 +97,25 @@ const authenticateToken = (req, res, next) => {
 
 // Routes
 
-// Health check
-app.get('/health', (req, res) => {
+// Health check with database status
+app.get('/health', async (req, res) => {
+  let dbStatus = 'Unknown';
+  
+  try {
+    const client = await pool.connect();
+    await client.query('SELECT 1');
+    client.release();
+    dbStatus = 'Connected';
+  } catch (error) {
+    dbStatus = 'Disconnected: ' + error.message;
+  }
+  
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV 
+    environment: process.env.NODE_ENV,
+    database: dbStatus,
+    port: port
   });
 });
 
