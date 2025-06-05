@@ -2,10 +2,11 @@
   "name": "pocket-pm-backend",
   "version": "1.0.0",
   "description": "Backend API for Pocket PM - AI-powered product analysis tool",
-  "main": "server.js",
+  "main": "test-server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "node test-server.js",
+    "dev": "nodemon test-server.js",
+    "prod": "node server.js"
   },
   "keywords": ["ai", "product-management", "analysis", "backend"],
   "author": "Sean Winslow",
