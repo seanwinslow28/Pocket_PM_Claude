@@ -16,6 +16,7 @@ import ProfileScreen from './src/screens/ProfileScreen';
 
 // Import Auth Context
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
+import { ThemeProvider } from './src/contexts/ThemeContext';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -108,10 +109,12 @@ function AppNavigation() {
 export default function App() {
   return (
     <AuthProvider>
-      <PaperProvider theme={theme}>
-        <StatusBar style="light" backgroundColor={theme.colors.primary} />
-        <AppNavigation />
-      </PaperProvider>
+      <ThemeProvider>
+        <PaperProvider theme={theme}>
+          <StatusBar style="light" backgroundColor={theme.colors.primary} />
+          <AppNavigation />
+        </PaperProvider>
+      </ThemeProvider>
     </AuthProvider>
   );
 } 
