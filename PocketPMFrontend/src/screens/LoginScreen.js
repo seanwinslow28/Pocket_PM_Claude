@@ -19,13 +19,14 @@ import {
 } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
-import ApiService from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ visible: false, message: '' });
+  
+  const { signIn, loading } = useAuth();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -33,27 +34,24 @@ export default function LoginScreen({ navigation }) {
       return;
     }
 
-    setLoading(true);
     try {
-      const result = await ApiService.login({ email, password });
+      const { data, error } = await signIn(email, password);
       
-      if (result.success) {
-        setSnackbar({ visible: true, message: 'Welcome back! 🎉' });
-        // Navigation will happen automatically due to auth state change
-        setTimeout(() => {
-          // Force a refresh of auth state if needed
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Home' }],
-          });
-        }, 1000);
+      if (error) {
+        setSnackbar({ 
+          visible: true, 
+          message: error.message || 'Login failed. Please try again.' 
+        });
       } else {
-        setSnackbar({ visible: true, message: result.error });
+        setSnackbar({ visible: true, message: 'Welcome back! 🎉' });
+        // Navigation will happen automatically due to auth state change in App.js
       }
     } catch (error) {
-      setSnackbar({ visible: true, message: 'Login failed. Please try again.' });
-    } finally {
-      setLoading(false);
+      setSnackbar({ 
+        visible: true, 
+        message: 'An unexpected error occurred. Please try again.' 
+      });
+      console.error('Login error:', error);
     }
   };
 
@@ -134,7 +132,7 @@ export default function LoginScreen({ navigation }) {
 
                 <View style={styles.demoInfo}>
                   <Text style={styles.demoText}>
-                    💡 Demo: Use any email and password to get started
+                    💡 Create a real account to get started with Supabase authentication
                   </Text>
                 </View>
               </Card.Content>

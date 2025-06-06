@@ -18,7 +18,7 @@ import {
 } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
-import ApiService from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function RegisterScreen({ navigation }) {
   const [formData, setFormData] = useState({
@@ -27,9 +27,10 @@ export default function RegisterScreen({ navigation }) {
     password: '',
     confirmPassword: '',
   });
-  const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ visible: false, message: '' });
   const [errors, setErrors] = useState({});
+
+  const { signUp, loading } = useAuth();
 
   const updateField = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -72,26 +73,45 @@ export default function RegisterScreen({ navigation }) {
       return;
     }
 
-    setLoading(true);
     try {
-      const { confirmPassword, ...userData } = formData;
-      const result = await ApiService.register(userData);
+      const { data, error } = await signUp(
+        formData.email, 
+        formData.password, 
+        {
+          full_name: formData.name,
+          name: formData.name, // For backward compatibility
+        }
+      );
       
-      if (result.success) {
-        setSnackbar({ visible: true, message: 'Account created successfully! 🎉' });
-        setTimeout(() => {
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Home' }],
+      if (error) {
+        if (error.message.includes('already registered')) {
+          setSnackbar({ 
+            visible: true, 
+            message: 'This email is already registered. Please sign in instead.' 
           });
-        }, 1000);
+        } else {
+          setSnackbar({ 
+            visible: true, 
+            message: error.message || 'Registration failed. Please try again.' 
+          });
+        }
       } else {
-        setSnackbar({ visible: true, message: result.error });
+        setSnackbar({ 
+          visible: true, 
+          message: 'Account created successfully! 🎉 Please check your email to verify your account.' 
+        });
+        // Navigation will happen automatically when auth state changes
+        // OR redirect to login if email confirmation is required
+        setTimeout(() => {
+          navigation.navigate('Login');
+        }, 2000);
       }
     } catch (error) {
-      setSnackbar({ visible: true, message: 'Registration failed. Please try again.' });
-    } finally {
-      setLoading(false);
+      setSnackbar({ 
+        visible: true, 
+        message: 'An unexpected error occurred. Please try again.' 
+      });
+      console.error('Registration error:', error);
     }
   };
 
@@ -221,7 +241,7 @@ export default function RegisterScreen({ navigation }) {
       <Snackbar
         visible={snackbar.visible}
         onDismiss={() => setSnackbar({ visible: false, message: '' })}
-        duration={3000}
+        duration={4000}
       >
         {snackbar.message}
       </Snackbar>

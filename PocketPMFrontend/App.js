@@ -1,5 +1,5 @@
 // App.js
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -14,8 +14,8 @@ import HomeScreen from './src/screens/HomeScreen';
 import AnalysisScreen from './src/screens/AnalysisScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 
-// Import API service
-import ApiService from './src/services/api';
+// Import Auth Context
+import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -88,36 +88,30 @@ function AuthStack() {
   );
 }
 
-export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+// Main App Navigation Component
+function AppNavigation() {
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  const checkAuthStatus = async () => {
-    try {
-      const authenticated = await ApiService.isAuthenticated();
-      setIsAuthenticated(authenticated);
-    } catch (error) {
-      console.error('Auth check failed:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (isLoading) {
+  if (loading) {
     // You could add a splash screen here
     return null;
   }
 
   return (
-    <PaperProvider theme={theme}>
-      <StatusBar style="light" backgroundColor={theme.colors.primary} />
-      <NavigationContainer>
-        {isAuthenticated ? <TabNavigator /> : <AuthStack />}
-      </NavigationContainer>
-    </PaperProvider>
+    <NavigationContainer>
+      {user ? <TabNavigator /> : <AuthStack />}
+    </NavigationContainer>
+  );
+}
+
+// Main App Component wrapped with providers
+export default function App() {
+  return (
+    <AuthProvider>
+      <PaperProvider theme={theme}>
+        <StatusBar style="light" backgroundColor={theme.colors.primary} />
+        <AppNavigation />
+      </PaperProvider>
+    </AuthProvider>
   );
 } 

@@ -1,85 +1,92 @@
-import axios from 'axios';
+import { supabase, handleSupabaseError } from './supabase';
 import * as SecureStore from 'expo-secure-store';
-
-// Production backend on Railway
-const BASE_URL = 'https://pocketpmclaude-production.up.railway.app';
-// For local development - uncomment this line when testing locally:
-// const BASE_URL = 'http://localhost:3001';
 
 class ApiService {
   constructor() {
-    this.api = axios.create({
-      baseURL: BASE_URL,
-      timeout: 30000, // 30 seconds for AI analysis
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    // Add auth token to requests automatically
-    this.api.interceptors.request.use(async (config) => {
-      const token = await SecureStore.getItemAsync('authToken');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+    // Listen for auth changes
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        SecureStore.setItemAsync('authToken', session.access_token);
+        SecureStore.setItemAsync('userData', JSON.stringify(session.user));
+      } else if (event === 'SIGNED_OUT') {
+        SecureStore.deleteItemAsync('authToken');
+        SecureStore.deleteItemAsync('userData');
       }
-      return config;
     });
-
-    // Handle auth errors
-    this.api.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        if (error.response?.status === 401) {
-          // Token expired, remove it
-          await SecureStore.deleteItemAsync('authToken');
-          await SecureStore.deleteItemAsync('userData');
-        }
-        return Promise.reject(error);
-      }
-    );
   }
 
-  // Authentication methods
+  // Authentication methods using Supabase Auth
   async register(userData) {
     try {
-      const response = await this.api.post('/api/register', userData);
-      const { token, user } = response.data;
-      
-      // Store token securely
-      await SecureStore.setItemAsync('authToken', token);
-      await SecureStore.setItemAsync('userData', JSON.stringify(user));
-      
-      return { success: true, data: response.data };
+      const { data, error } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: {
+          data: {
+            name: userData.name
+          }
+        }
+      });
+
+      if (error) {
+        return { 
+          success: false, 
+          error: handleSupabaseError(error)
+        };
+      }
+
+      return { 
+        success: true, 
+        data: {
+          user: data.user,
+          message: 'Registration successful! Please check your email to verify your account.'
+        }
+      };
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.error || 'Registration failed' 
+        error: 'Registration failed' 
       };
     }
   }
 
   async login(credentials) {
     try {
-      const response = await this.api.post('/api/login', credentials);
-      const { token, user } = response.data;
-      
-      // Store token securely
-      await SecureStore.setItemAsync('authToken', token);
-      await SecureStore.setItemAsync('userData', JSON.stringify(user));
-      
-      return { success: true, data: response.data };
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password
+      });
+
+      if (error) {
+        return { 
+          success: false, 
+          error: handleSupabaseError(error)
+        };
+      }
+
+      return { 
+        success: true, 
+        data: {
+          user: data.user,
+          message: 'Login successful!'
+        }
+      };
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.error || 'Login failed' 
+        error: 'Login failed' 
       };
     }
   }
 
   async logout() {
     try {
-      await SecureStore.deleteItemAsync('authToken');
-      await SecureStore.deleteItemAsync('userData');
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        return { success: false, error: handleSupabaseError(error) };
+      }
+
       return { success: true };
     } catch (error) {
       return { success: false, error: 'Logout failed' };
@@ -88,8 +95,13 @@ class ApiService {
 
   async getCurrentUser() {
     try {
-      const userData = await SecureStore.getItemAsync('userData');
-      return userData ? JSON.parse(userData) : null;
+      const { data: { user }, error } = await supabase.auth.getUser();
+      
+      if (error) {
+        return null;
+      }
+
+      return user;
     } catch (error) {
       return null;
     }
@@ -97,33 +109,121 @@ class ApiService {
 
   async isAuthenticated() {
     try {
-      const token = await SecureStore.getItemAsync('authToken');
-      return !!token;
+      const { data: { session }, error } = await supabase.auth.getSession();
+      return !!session && !error;
     } catch (error) {
       return false;
     }
   }
 
-  // AI Analysis method
+  // AI Analysis using Supabase Edge Functions
   async analyzeIdea(idea) {
     try {
-      const response = await this.api.post('/api/analyze', { idea });
-      return { success: true, data: response.data };
+      // Get current session for authorization
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        return { 
+          success: false, 
+          error: 'Please login to analyze ideas' 
+        };
+      }
+
+      // Parse the idea into product name and description
+      // If it's a simple idea, use it as both name and description
+      const ideaParts = idea.split(':');
+      const productName = ideaParts.length > 1 ? ideaParts[0].trim() : 'Product Idea';
+      const productDescription = ideaParts.length > 1 ? ideaParts[1].trim() : idea;
+
+      // Call Supabase Edge Function for AI analysis
+      const { data, error } = await supabase.functions.invoke('analyze-product', {
+        body: { 
+          productName,
+          productDescription,
+          analysisType: 'business', // Default to business analysis
+          userId: session.user.id
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) {
+        return { 
+          success: false, 
+          error: handleSupabaseError(error)
+        };
+      }
+
+      // Return the analysis data
+      return { 
+        success: true, 
+        data: {
+          idea: idea,
+          analysis: data.analysis.content,
+          timestamp: data.analysis.createdAt,
+          userId: session.user.id,
+          analysisId: data.analysis.id
+        }
+      };
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.error || 'Analysis failed' 
+        error: 'Analysis failed' 
       };
+    }
+  }
+
+  // Get user's analysis history
+  async getAnalysisHistory() {
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const { data, error } = await supabase
+        .from('product_analyses')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) {
+        return { 
+          success: false, 
+          error: handleSupabaseError(error)
+        };
+      }
+
+      return { success: true, data: data || [] };
+    } catch (error) {
+      return { success: false, error: 'Failed to load history' };
     }
   }
 
   // Health check
   async checkHealth() {
     try {
-      const response = await this.api.get('/health');
-      return { success: true, data: response.data };
+      const { data, error } = await supabase
+        .from('health_check')
+        .select('*')
+        .limit(1);
+
+      return { 
+        success: !error, 
+        data: { 
+          status: error ? 'Error' : 'OK',
+          timestamp: new Date().toISOString(),
+          service: 'Supabase'
+        } 
+      };
     } catch (error) {
-      return { success: false, error: 'Backend unavailable' };
+      return { 
+        success: false, 
+        error: 'Supabase unavailable' 
+      };
     }
   }
 }
