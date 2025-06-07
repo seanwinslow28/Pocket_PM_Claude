@@ -7,12 +7,16 @@ import { Provider as PaperProvider, DefaultTheme } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
-// Import screens (we'll create these next)
+// Import screens
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import HomeScreen from './src/screens/HomeScreen';
+import LoadingScreen from './src/screens/LoadingScreen';
 import AnalysisScreen from './src/screens/AnalysisScreen';
+import DeepDiveScreen from './src/screens/DeepDiveScreen';
+import LaunchScreen from './src/screens/LaunchScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
 
 // Import Auth Context
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
@@ -34,6 +38,50 @@ const theme = {
     placeholder: '#64748B',
   },
 };
+
+// Stack Navigator for Home flow (Home -> Loading -> Analysis Results -> Deep Dive -> Launch)
+function HomeStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="HomeMain" component={HomeScreen} />
+      <Stack.Screen name="Loading" component={LoadingScreen} />
+      <Stack.Screen name="AnalysisResults" component={AnalysisScreen} />
+      <Stack.Screen name="DeepDive" component={DeepDiveScreen} />
+      <Stack.Screen name="Launch" component={LaunchScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// Stack Navigator for Analysis flow
+function AnalysisStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="AnalysisMain" component={AnalysisScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// Stack Navigator for Profile flow
+function ProfileStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="ProfileMain" component={ProfileScreen} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
+    </Stack.Navigator>
+  );
+}
 
 // Bottom Tab Navigator for authenticated users
 function TabNavigator() {
@@ -58,9 +106,9 @@ function TabNavigator() {
         headerShown: false,
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Analysis" component={AnalysisScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Home" component={HomeStack} />
+      <Tab.Screen name="Analysis" component={AnalysisStack} />
+      <Tab.Screen name="Profile" component={ProfileStack} />
     </Tab.Navigator>
   );
 }

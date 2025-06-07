@@ -9,27 +9,32 @@ import {
   TouchableOpacity,
   Text,
   SafeAreaView,
+  Modal,
+  Switch,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Animatable from 'react-native-animatable';
 import ApiService from '../services/api';
 import StorageService from '../utils/storage';
 import { useTheme } from '../contexts/ThemeContext';
+import dummyDataService from '../services/dummyDataService';
 
 const { width } = Dimensions.get('window');
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
   const { colors, styles: themeStyles, isDarkMode } = useTheme();
   const [idea, setIdea] = useState('');
-  const [analysis, setAnalysis] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [user, setUser] = useState(null);
   const [recentAnalyses, setRecentAnalyses] = useState([]);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [testMode, setTestMode] = useState(false);
 
   useEffect(() => {
     loadUserData();
     loadRecentAnalyses();
+    loadTestMode();
   }, []);
 
   const loadUserData = async () => {
@@ -42,9 +47,37 @@ export default function HomeScreen() {
     setRecentAnalyses(history.slice(0, 3));
   };
 
+  const loadTestMode = async () => {
+    try {
+      const isTestModeEnabled = await dummyDataService.isTestModeEnabled();
+      setTestMode(isTestModeEnabled);
+    } catch (error) {
+      console.error('Error loading test mode:', error);
+    }
+  };
+
+  const handleTestModeToggle = async (value) => {
+    try {
+      await dummyDataService.setTestMode(value);
+      setTestMode(value);
+      
+      Alert.alert(
+        'Test Mode Updated',
+        value 
+          ? 'Test mode enabled. You\'ll now use dummy data instead of OpenAI API calls.' 
+          : 'Test mode disabled. You\'ll now use real OpenAI API calls.',
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Error updating test mode:', error);
+      Alert.alert('Error', 'Failed to update test mode setting.');
+    }
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
     await loadRecentAnalyses();
+    await loadTestMode();
     setRefreshing(false);
   };
 
@@ -53,29 +86,95 @@ export default function HomeScreen() {
       return;
     }
 
-    setLoading(true);
-    try {
-      const result = await ApiService.analyzeIdea(idea.trim());
-      
-      if (result.success) {
-        setAnalysis(result.data);
-        
-        await StorageService.saveAnalysis({
-          idea: idea.trim(),
-          analysis: result.data.analysis,
-          usage: result.data.usage
-        });
-        
-        await loadRecentAnalyses();
-      }
-    } catch (error) {
-      console.error('Analysis failed:', error);
-    } finally {
-      setLoading(false);
-    }
+    // Navigate to loading screen with the idea
+    navigation.navigate('Loading', { 
+      idea: idea.trim(),
+    });
   };
 
-  const isButtonDisabled = !idea.trim() || loading;
+  const isButtonDisabled = !idea.trim();
+
+  const SettingsModal = () => (
+    <Modal
+      visible={showSettingsModal}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={() => setShowSettingsModal(false)}
+    >
+      <SafeAreaView style={[styles.modalContainer, { backgroundColor: isDarkMode ? colors.background : '#f8f9fa' }]}>
+        {/* Modal Header */}
+        <View style={[styles.modalHeader, { backgroundColor: isDarkMode ? colors.surface : '#ffffff', borderBottomColor: isDarkMode ? colors.border : '#e5e7eb' }]}>
+          <TouchableOpacity onPress={() => setShowSettingsModal(false)} style={styles.closeButton} activeOpacity={0.7}>
+            <Ionicons name="close" size={24} color={isDarkMode ? colors.text : '#111827'} />
+          </TouchableOpacity>
+          <Text style={[styles.modalTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Settings</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+
+        {/* Modal Content */}
+        <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+          {/* Development Section */}
+          <View style={styles.modalSection}>
+            <Text style={[styles.modalSectionTitle, { color: isDarkMode ? colors.text : '#111827' }]}>
+              🧪 Development
+            </Text>
+            <Text style={[styles.modalSectionDescription, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+              Settings for development and testing
+            </Text>
+
+            <View style={[styles.settingItem, { backgroundColor: isDarkMode ? colors.surface : '#ffffff', borderColor: isDarkMode ? colors.border : '#e5e7eb' }]}>
+              <View style={styles.settingItemLeft}>
+                <View style={[styles.settingIcon, { backgroundColor: colors.primary + '15' }]}>
+                  <Ionicons name="flask" size={24} color={colors.primary} />
+                </View>
+                <View style={styles.settingItemText}>
+                  <Text style={[styles.settingTitle, { color: isDarkMode ? colors.text : '#111827' }]}>
+                    Test Mode
+                  </Text>
+                  <Text style={[styles.settingDescription, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                    {testMode 
+                      ? "Using dummy data - no OpenAI API calls" 
+                      : "Using real OpenAI API - costs money"
+                    }
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={testMode}
+                onValueChange={handleTestModeToggle}
+                trackColor={{ false: '#e5e7eb', true: colors.primary + '30' }}
+                thumbColor={testMode ? colors.primary : '#9ca3af'}
+              />
+            </View>
+          </View>
+
+          {/* Test Mode Info */}
+          {testMode && (
+            <View style={[styles.infoCard, { backgroundColor: '#fef3c7', borderColor: '#f59e0b' }]}>
+              <View style={styles.infoHeader}>
+                <Ionicons name="warning" size={20} color="#f59e0b" />
+                <Text style={[styles.infoTitle, { color: '#92400e' }]}>Test Mode Active</Text>
+              </View>
+              <Text style={[styles.infoDescription, { color: '#92400e' }]}>
+                All analysis requests will use dummy data. No OpenAI API calls will be made, so you won't be charged.
+                This is perfect for development and testing the app flow.
+              </Text>
+            </View>
+          )}
+
+          {/* Footer */}
+          <View style={styles.modalFooter}>
+            <Text style={[styles.modalFooterText, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+              Pocket PM v1.0.0
+            </Text>
+            <Text style={[styles.modalFooterText, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+              Made with <Text style={styles.heart}>❤️</Text> for Product Innovators
+            </Text>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#f8f9fa' }]}>
@@ -100,7 +199,7 @@ export default function HomeScreen() {
             <View style={styles.titleContainer}>
               <Text style={[styles.title, { color: isDarkMode ? colors.text : '#111827' }]}>Pocket PM</Text>
               <Text style={[styles.subtitle, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
-                From Idea → Execution → Launch
+                From Idea → Analysis → Launch
               </Text>
             </View>
           </View>
@@ -108,7 +207,11 @@ export default function HomeScreen() {
             <TouchableOpacity style={[styles.iconButton, { backgroundColor: isDarkMode ? 'transparent' : 'transparent' }]} activeOpacity={0.7}>
               <Ionicons name="time-outline" size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.iconButton, { backgroundColor: isDarkMode ? 'transparent' : 'transparent' }]} activeOpacity={0.7}>
+            <TouchableOpacity 
+              style={[styles.iconButton, { backgroundColor: isDarkMode ? 'transparent' : 'transparent' }]} 
+              onPress={() => setShowSettingsModal(true)}
+              activeOpacity={0.7}
+            >
               <Ionicons name="settings-outline" size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
             </TouchableOpacity>
           </View>
@@ -127,12 +230,12 @@ export default function HomeScreen() {
                 <Text style={[styles.stepLabel, styles.stepLabelActive]}>Idea</Text>
               </View>
 
-              {/* Execution Step - Inactive */}
+              {/* Analysis Step - Inactive */}
               <View style={styles.step}>
                 <View style={styles.stepIcon}>
-                  <Ionicons name="target" size={32} color="#ffffff" />
+                  <Ionicons name="analytics" size={32} color="#ffffff" />
                 </View>
-                <Text style={styles.stepLabel}>Execution</Text>
+                <Text style={styles.stepLabel}>Analysis</Text>
               </View>
 
               {/* Launch Step - Inactive */}
@@ -149,6 +252,9 @@ export default function HomeScreen() {
           <Animatable.View animation="fadeInUp" duration={800} delay={400}>
             <View style={styles.formContainer}>
               <Text style={[styles.formTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Share Your Idea</Text>
+              <Text style={[styles.formSubtitle, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                Tell us about your product vision and we'll provide comprehensive AI analysis to help bring it to life.
+              </Text>
               
               <View style={styles.form}>
                 <TextInput
@@ -166,7 +272,6 @@ export default function HomeScreen() {
                   placeholderTextColor={isDarkMode ? colors.placeholder : '#9ca3af'}
                   multiline
                   textAlignVertical="top"
-                  editable={!loading}
                 />
 
                 <TouchableOpacity
@@ -181,33 +286,40 @@ export default function HomeScreen() {
                   disabled={isButtonDisabled}
                   activeOpacity={isButtonDisabled ? 1 : 0.8}
                 >
-                  {loading ? (
-                    <>
-                      <Ionicons name="refresh" size={20} color="#ffffff" style={styles.rotating} />
-                      <Text style={styles.analyzeButtonText}>Analyzing...</Text>
-                    </>
-                  ) : (
-                    <>
-                      <Ionicons name="send" size={20} color="#ffffff" />
-                      <Text style={styles.analyzeButtonText}>Analyze Idea</Text>
-                    </>
-                  )}
+                  <Ionicons name="sparkles" size={20} color="#ffffff" />
+                  <Text style={styles.analyzeButtonText}>Analyze My Idea</Text>
                 </TouchableOpacity>
+              </View>
+
+              {/* Example Ideas */}
+              <View style={styles.examplesContainer}>
+                <Text style={[styles.examplesTitle, { color: isDarkMode ? colors.text : '#111827' }]}>💡 Need inspiration?</Text>
+                <View style={styles.examplesList}>
+                  <TouchableOpacity 
+                    style={[styles.exampleChip, { backgroundColor: isDarkMode ? colors.surface : '#f3f4f6' }]}
+                    onPress={() => setIdea("A mobile app that helps people find and book local fitness classes")}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.exampleText, { color: isDarkMode ? colors.text : '#374151' }]}>Fitness class finder</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.exampleChip, { backgroundColor: isDarkMode ? colors.surface : '#f3f4f6' }]}
+                    onPress={() => setIdea("An AI-powered meal planning service that reduces food waste")}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.exampleText, { color: isDarkMode ? colors.text : '#374151' }]}>Smart meal planner</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.exampleChip, { backgroundColor: isDarkMode ? colors.surface : '#f3f4f6' }]}
+                    onPress={() => setIdea("A platform connecting remote workers with local coffee shops for workspace")}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.exampleText, { color: isDarkMode ? colors.text : '#374151' }]}>Remote workspace finder</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </Animatable.View>
-
-          {/* Analysis Results */}
-          {analysis && !loading && (
-            <Animatable.View animation="fadeInUp" duration={800} delay={600}>
-              <View style={[styles.resultsContainer, { backgroundColor: isDarkMode ? colors.surface : '#ffffff' }]}>
-                <Text style={[styles.resultsTitle, { color: isDarkMode ? colors.text : '#111827' }]}>✨ Analysis Results</Text>
-                <ScrollView style={styles.analysisContent} nestedScrollEnabled>
-                  <Text style={[styles.analysisText, { color: isDarkMode ? colors.text : '#333333' }]}>{analysis.analysis}</Text>
-                </ScrollView>
-              </View>
-            </Animatable.View>
-          )}
         </View>
 
         {/* Footer */}
@@ -217,6 +329,8 @@ export default function HomeScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      <SettingsModal />
     </SafeAreaView>
   );
 }
@@ -333,8 +447,15 @@ const styles = StyleSheet.create({
     fontSize: 30, // 1.875rem
     fontWeight: '700',
     textAlign: 'center',
+    marginBottom: 16, // 1rem
+    fontFamily: 'System',
+  },
+  formSubtitle: {
+    fontSize: 16, // 1rem
+    textAlign: 'center',
     marginBottom: 32, // 2rem
     fontFamily: 'System',
+    lineHeight: 24,
   },
   form: {
     flexDirection: 'column',
@@ -358,37 +479,38 @@ const styles = StyleSheet.create({
     paddingVertical: 16, // 1rem
     paddingHorizontal: 16, // 1rem
   },
-  rotating: {
-    // Add rotation animation here if needed
-  },
   analyzeButtonText: {
     color: '#ffffff',
     fontSize: 18, // 1.125rem
     fontWeight: '500',
     fontFamily: 'System',
   },
-  resultsContainer: {
-    marginTop: 32,
-    padding: 24,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  examplesContainer: {
+    marginTop: 40, // 2.5rem
   },
-  resultsTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 16,
+  examplesTitle: {
+    fontSize: 18, // 1.125rem
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 16, // 1rem
     fontFamily: 'System',
   },
-  analysisContent: {
-    maxHeight: 400,
+  examplesList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 12, // 0.75rem
   },
-  analysisText: {
-    fontSize: 16,
-    lineHeight: 24,
+  exampleChip: {
+    paddingVertical: 8, // 0.5rem
+    paddingHorizontal: 16, // 1rem
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  exampleText: {
+    fontSize: 14, // 0.875rem
+    fontWeight: '500',
     fontFamily: 'System',
   },
   footer: {
@@ -403,5 +525,99 @@ const styles = StyleSheet.create({
   },
   heart: {
     color: '#ef4444',
+  },
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  closeButton: {
+    padding: 8,
+  },
+  modalContent: {
+    flex: 1,
+  },
+  modalSection: {
+    padding: 24,
+  },
+  modalSectionTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 16,
+  },
+  modalSectionDescription: {
+    fontSize: 16,
+    marginBottom: 24,
+  },
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderWidth: 1,
+    borderRadius: 12,
+  },
+  settingItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  settingIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  settingItemText: {
+    flexDirection: 'column',
+  },
+  settingTitle: {
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  settingDescription: {
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  infoCard: {
+    padding: 16,
+    borderWidth: 2,
+    borderColor: '#f59e0b',
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  infoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  infoTitle: {
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  infoDescription: {
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  modalFooter: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  modalFooterText: {
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  headerSpacer: {
+    flex: 1,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
   },
 });

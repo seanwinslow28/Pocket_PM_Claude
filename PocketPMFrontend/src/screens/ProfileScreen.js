@@ -419,7 +419,11 @@ const ProfileScreen = ({ navigation }) => {
             <TouchableOpacity style={[styles.iconButton, { backgroundColor: isDarkMode ? 'transparent' : 'transparent' }]} activeOpacity={0.7}>
               <Ionicons name="notifications-outline" size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.iconButton, { backgroundColor: isDarkMode ? 'transparent' : 'transparent' }]} activeOpacity={0.7}>
+            <TouchableOpacity 
+              style={[styles.iconButton, { backgroundColor: isDarkMode ? 'transparent' : 'transparent' }]} 
+              onPress={() => navigation.navigate('Settings')}
+              activeOpacity={0.7}
+            >
               <Ionicons name="settings-outline" size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
             </TouchableOpacity>
           </View>
@@ -514,6 +518,20 @@ const ProfileScreen = ({ navigation }) => {
               <Text style={[styles.sectionTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Settings</Text>
               
               <View style={styles.settingsList}>
+                <TouchableOpacity 
+                  style={styles.settingItem} 
+                  onPress={() => navigation.navigate('Settings')}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.settingLeft}>
+                    <Ionicons name="settings-outline" size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
+                    <Text style={[styles.settingText, { color: isDarkMode ? colors.text : '#333333' }]}>
+                      App Settings
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={isDarkMode ? colors.textSecondary : '#9ca3af'} />
+                </TouchableOpacity>
+
                 <TouchableOpacity style={styles.settingItem} onPress={toggleTheme} activeOpacity={0.7}>
                   <View style={styles.settingLeft}>
                     <Ionicons name={isDarkMode ? "moon" : "sunny"} size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />

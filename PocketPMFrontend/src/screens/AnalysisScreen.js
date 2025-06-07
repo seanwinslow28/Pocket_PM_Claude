@@ -3,13 +3,11 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  RefreshControl,
   Dimensions,
-  TextInput,
   TouchableOpacity,
   Text,
   SafeAreaView,
-  Modal,
+  Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Animatable from 'react-native-animatable';
@@ -19,91 +17,94 @@ import { useTheme } from '../contexts/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
-export default function AnalysisScreen() {
+export default function AnalysisScreen({ navigation, route }) {
   const { colors, styles: themeStyles, isDarkMode } = useTheme();
-  const [productName, setProductName] = useState('');
-  const [productDescription, setProductDescription] = useState('');
-  const [analysisType, setAnalysisType] = useState('comprehensive');
-  const [analysis, setAnalysis] = useState(null);
+  const { idea, analysis, usage } = route.params || {};
   const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [showTypePicker, setShowTypePicker] = useState(false);
-  const [recentAnalyses, setRecentAnalyses] = useState([]);
+  const [deepDiveAnalysis, setDeepDiveAnalysis] = useState(null);
 
-  const analysisTypes = [
-    { id: 'comprehensive', name: 'Comprehensive Analysis', icon: 'analytics' },
-    { id: 'market', name: 'Market Analysis', icon: 'trending-up' },
-    { id: 'competitive', name: 'Competitive Analysis', icon: 'people' },
-    { id: 'technical', name: 'Technical Feasibility', icon: 'construct' },
-    { id: 'financial', name: 'Financial Projection', icon: 'calculator' },
+  const deepDiveOptions = [
+    { 
+      id: 'market', 
+      name: 'Market Analysis', 
+      icon: 'trending-up',
+      description: 'Market size, target audience, and competitive landscape',
+      color: '#3b82f6'
+    },
+    { 
+      id: 'technical', 
+      name: 'Technical Feasibility', 
+      icon: 'construct',
+      description: 'Technology requirements, development complexity, and resources',
+      color: '#8b5cf6'
+    },
+    { 
+      id: 'business', 
+      name: 'Business Model', 
+      icon: 'calculator',
+      description: 'Revenue streams, cost structure, and financial projections',
+      color: '#10b981'
+    },
+    { 
+      id: 'competitive', 
+      name: 'Competitive Analysis', 
+      icon: 'people',
+      description: 'Competitor analysis, positioning, and differentiation strategy',
+      color: '#f59e0b'
+    },
   ];
 
-  useEffect(() => {
-    loadRecentAnalyses();
-  }, []);
-
-  const loadRecentAnalyses = async () => {
-    const history = await StorageService.getAnalysisHistory();
-    setRecentAnalyses(history.slice(0, 5));
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadRecentAnalyses();
-    setRefreshing(false);
-  };
-
-  const handleAnalyze = async () => {
-    if (!productName.trim() || !productDescription.trim()) {
-      return;
-    }
-
-    setLoading(true);
+  const handleDeepDive = (analysisType) => {
+    console.log('Deep dive clicked:', analysisType);
     try {
-      const result = await ApiService.analyzeProduct({
-        name: productName.trim(),
-        description: productDescription.trim(),
-        analysisType
+      // Navigate to deep dive analysis with the selected type
+      navigation.navigate('DeepDive', {
+        idea,
+        analysisType,
+        originalAnalysis: analysis
       });
-      
-      if (result.success) {
-        setAnalysis(result.data);
-        
-        await StorageService.saveAnalysis({
-          productName: productName.trim(),
-          productDescription: productDescription.trim(),
-          analysisType,
-          analysis: result.data.analysis,
-          usage: result.data.usage
-        });
-        
-        await loadRecentAnalyses();
-      }
     } catch (error) {
-      console.error('Analysis failed:', error);
-    } finally {
-      setLoading(false);
+      console.error('Deep dive navigation failed:', error);
     }
   };
 
-  const getSelectedAnalysisType = () => {
-    return analysisTypes.find(type => type.id === analysisType) || analysisTypes[0];
+  const handleShare = async () => {
+    try {
+      const shareContent = `💡 Product Idea Analysis\n\nIdea: ${idea}\n\nAnalysis:\n${analysis}\n\nAnalyzed with Pocket PM - AI-powered product analysis`;
+      
+      await Share.share({
+        message: shareContent,
+        title: 'My Product Analysis'
+      });
+    } catch (error) {
+      console.error('Share failed:', error);
+    }
   };
 
-  const isButtonDisabled = !productName.trim() || !productDescription.trim() || loading;
+  const handleNewAnalysis = () => {
+    navigation.navigate('HomeMain');
+  };
+
+  const handleLaunch = () => {
+    navigation.navigate('Launch', {
+      idea,
+      analysis,
+      usage
+    });
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#f8f9fa' }]}>
       <ScrollView
         style={styles.scrollView}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View style={[styles.header, { backgroundColor: isDarkMode ? colors.surface : '#ffffff', borderBottomColor: isDarkMode ? colors.border : '#e5e7eb' }]}>
           <View style={styles.headerLeft}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.7}>
+              <Ionicons name="arrow-back" size={24} color={isDarkMode ? colors.text : '#111827'} />
+            </TouchableOpacity>
             <View style={styles.logoContainer}>
               <View style={styles.logo}>
                 <Ionicons name="analytics" size={24} color="#ffffff" />
@@ -113,18 +114,18 @@ export default function AnalysisScreen() {
               </View>
             </View>
             <View style={styles.titleContainer}>
-              <Text style={[styles.title, { color: isDarkMode ? colors.text : '#111827' }]}>Product Analysis</Text>
+              <Text style={[styles.title, { color: isDarkMode ? colors.text : '#111827' }]}>Analysis Results</Text>
               <Text style={[styles.subtitle, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
-                Deep dive into your product concept
+                AI-powered insights for your idea
               </Text>
             </View>
           </View>
           <View style={styles.headerRight}>
-            <TouchableOpacity style={[styles.iconButton, { backgroundColor: isDarkMode ? 'transparent' : 'transparent' }]} activeOpacity={0.7}>
-              <Ionicons name="time-outline" size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
+            <TouchableOpacity style={styles.iconButton} onPress={handleShare} activeOpacity={0.7}>
+              <Ionicons name="share-outline" size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.iconButton, { backgroundColor: isDarkMode ? 'transparent' : 'transparent' }]} activeOpacity={0.7}>
-              <Ionicons name="settings-outline" size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
+            <TouchableOpacity style={styles.iconButton} onPress={handleNewAnalysis} activeOpacity={0.7}>
+              <Ionicons name="add-outline" size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
             </TouchableOpacity>
           </View>
         </View>
@@ -142,151 +143,147 @@ export default function AnalysisScreen() {
                 <Text style={[styles.stepLabel, styles.stepLabelCompleted]}>Idea</Text>
               </View>
 
-              {/* Analysis Step - Active */}
-              <View style={[styles.step, styles.stepActive]}>
-                <View style={[styles.stepIcon, styles.stepIconActive]}>
-                  <Ionicons name="analytics" size={32} color="#ffffff" />
+              {/* Analysis Step - Completed */}
+              <View style={styles.step}>
+                <View style={[styles.stepIcon, styles.stepIconCompleted]}>
+                  <Ionicons name="checkmark" size={32} color="#ffffff" />
                 </View>
-                <Text style={[styles.stepLabel, styles.stepLabelActive]}>Analysis</Text>
+                <Text style={[styles.stepLabel, styles.stepLabelCompleted]}>Analysis</Text>
               </View>
 
-              {/* Launch Step - Inactive */}
-              <View style={styles.step}>
-                <View style={styles.stepIcon}>
+              {/* Launch Step - Active */}
+              <View style={[styles.step, styles.stepActive]}>
+                <View style={[styles.stepIcon, styles.stepIconActive]}>
                   <Ionicons name="rocket" size={32} color="#ffffff" />
                 </View>
-                <Text style={styles.stepLabel}>Launch</Text>
+                <Text style={[styles.stepLabel, styles.stepLabelActive]}>Launch</Text>
               </View>
             </View>
           </Animatable.View>
 
-          {/* Form Container */}
+          {/* Idea Summary */}
           <Animatable.View animation="fadeInUp" duration={800} delay={400}>
-            <View style={styles.formContainer}>
-              <Text style={[styles.formTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Product Analysis</Text>
-              
-              <View style={styles.form}>
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: isDarkMode ? colors.text : '#333333' }]}>Product Name</Text>
-                  <TextInput
-                    style={[
-                      styles.textInput, 
-                      { 
-                        backgroundColor: isDarkMode ? colors.input : '#ffffff',
-                        borderColor: isDarkMode ? colors.border : '#d1d5db',
-                        color: isDarkMode ? colors.text : '#333333'
-                      }
-                    ]}
-                    value={productName}
-                    onChangeText={setProductName}
-                    placeholder="Enter your product name"
-                    placeholderTextColor={isDarkMode ? colors.placeholder : '#9ca3af'}
-                    editable={!loading}
-                  />
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: isDarkMode ? colors.text : '#333333' }]}>Product Description</Text>
-                  <TextInput
-                    style={[
-                      styles.descriptionInput, 
-                      { 
-                        backgroundColor: isDarkMode ? colors.input : '#ffffff',
-                        borderColor: isDarkMode ? colors.border : '#d1d5db',
-                        color: isDarkMode ? colors.text : '#333333'
-                      }
-                    ]}
-                    value={productDescription}
-                    onChangeText={setProductDescription}
-                    placeholder="Describe your product in detail..."
-                    placeholderTextColor={isDarkMode ? colors.placeholder : '#9ca3af'}
-                    multiline
-                    textAlignVertical="top"
-                    editable={!loading}
-                  />
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: isDarkMode ? colors.text : '#333333' }]}>Analysis Type</Text>
-                  <TouchableOpacity
-                    style={[
-                      styles.typePicker, 
-                      { 
-                        backgroundColor: isDarkMode ? colors.input : '#ffffff',
-                        borderColor: isDarkMode ? colors.border : '#d1d5db'
-                      }
-                    ]}
-                    onPress={() => setShowTypePicker(true)}
-                    disabled={loading}
-                  >
-                    <View style={styles.typePickerLeft}>
-                      <Ionicons name={getSelectedAnalysisType().icon} size={20} color={isDarkMode ? colors.text : '#333333'} />
-                      <Text style={[styles.typePickerText, { color: isDarkMode ? colors.text : '#333333' }]}>
-                        {getSelectedAnalysisType().name}
-                      </Text>
-                    </View>
-                    <Ionicons name="chevron-down" size={20} color={isDarkMode ? colors.textSecondary : '#9ca3af'} />
-                  </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity
-                  style={[
-                    styles.analyzeButton,
-                    {
-                      opacity: isButtonDisabled ? 0.5 : 1,
-                      backgroundColor: isButtonDisabled ? '#fca5a5' : '#f87171'
-                    }
-                  ]}
-                  onPress={handleAnalyze}
-                  disabled={isButtonDisabled}
-                  activeOpacity={isButtonDisabled ? 1 : 0.8}
-                >
-                  {loading ? (
-                    <>
-                      <Ionicons name="refresh" size={20} color="#ffffff" style={styles.rotating} />
-                      <Text style={styles.analyzeButtonText}>Analyzing...</Text>
-                    </>
-                  ) : (
-                    <>
-                      <Ionicons name="analytics" size={20} color="#ffffff" />
-                      <Text style={styles.analyzeButtonText}>Analyze Product</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
+            <View style={[styles.ideaSummary, { backgroundColor: isDarkMode ? colors.surface : '#ffffff' }]}>
+              <View style={styles.ideaHeader}>
+                <Ionicons name="bulb" size={24} color="#fbbf24" />
+                <Text style={[styles.ideaTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Your Idea</Text>
               </View>
+              <Text style={[styles.ideaText, { color: isDarkMode ? colors.text : '#333333' }]}>
+                {idea}
+              </Text>
             </View>
           </Animatable.View>
 
           {/* Analysis Results */}
-          {analysis && !loading && (
-            <Animatable.View animation="fadeInUp" duration={800} delay={600}>
-              <View style={[styles.resultsContainer, { backgroundColor: isDarkMode ? colors.surface : '#ffffff' }]}>
-                <Text style={[styles.resultsTitle, { color: isDarkMode ? colors.text : '#111827' }]}>📊 Analysis Results</Text>
-                <ScrollView style={styles.analysisContent} nestedScrollEnabled>
-                  <Text style={[styles.analysisText, { color: isDarkMode ? colors.text : '#333333' }]}>{analysis.analysis}</Text>
-                </ScrollView>
+          <Animatable.View animation="fadeInUp" duration={800} delay={600}>
+            <View style={[styles.analysisResults, { backgroundColor: isDarkMode ? colors.surface : '#ffffff' }]}>
+              <View style={styles.analysisHeader}>
+                <View style={styles.analysisHeaderLeft}>
+                  <Ionicons name="analytics" size={24} color="#ef4444" />
+                  <Text style={[styles.analysisTitle, { color: isDarkMode ? colors.text : '#111827' }]}>AI Analysis</Text>
+                </View>
+                <View style={styles.analysisScore}>
+                  <Text style={[styles.scoreText, { color: '#22c55e' }]}>✨ Complete</Text>
+                </View>
               </View>
-            </Animatable.View>
-          )}
+              <ScrollView style={styles.analysisContent} nestedScrollEnabled>
+                <Text style={[styles.analysisText, { color: isDarkMode ? colors.text : '#333333' }]}>
+                  {analysis}
+                </Text>
+              </ScrollView>
+            </View>
+          </Animatable.View>
 
-          {/* Recent Analyses */}
-          {recentAnalyses.length > 0 && (
-            <Animatable.View animation="fadeInUp" duration={800} delay={800}>
-              <View style={[styles.recentContainer, { backgroundColor: isDarkMode ? colors.surface : '#ffffff' }]}>
-                <Text style={[styles.recentTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Recent Analyses</Text>
-                {recentAnalyses.map((item, index) => (
-                  <View key={index} style={[styles.recentItem, { borderBottomColor: isDarkMode ? colors.border : '#f3f4f6' }]}>
-                    <Text style={[styles.recentItemName, { color: isDarkMode ? colors.text : '#111827' }]}>
-                      {item.productName || item.idea?.substring(0, 50) + '...'}
-                    </Text>
-                    <Text style={[styles.recentItemDate, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
-                      {new Date(item.timestamp).toLocaleDateString()}
-                    </Text>
-                  </View>
+          {/* Deep Dive Options */}
+          <Animatable.View animation="fadeInUp" duration={800} delay={800}>
+            <View style={styles.deepDiveSection}>
+              <Text style={[styles.deepDiveTitle, { color: isDarkMode ? colors.text : '#111827' }]}>
+                🔍 Deep Dive Analysis
+              </Text>
+              <Text style={[styles.deepDiveSubtitle, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                Get specialized insights for different aspects of your idea
+              </Text>
+              
+              <View style={styles.deepDiveGrid}>
+                {deepDiveOptions.map((option, index) => (
+                  <Animatable.View
+                    key={option.id}
+                    animation="fadeInUp"
+                    duration={600}
+                    delay={1000 + (index * 100)}
+                  >
+                    <TouchableOpacity
+                      style={[
+                        styles.deepDiveCard,
+                        { 
+                          backgroundColor: isDarkMode ? colors.surface : '#ffffff',
+                          borderLeftColor: option.color
+                        }
+                      ]}
+                      onPress={() => {
+                        console.log('Deep dive pressed:', option.id);
+                        handleDeepDive(option.id);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.deepDiveCardHeader}>
+                        <View style={[styles.deepDiveIcon, { backgroundColor: option.color + '15' }]}>
+                          <Ionicons name={option.icon} size={24} color={option.color} />
+                        </View>
+                        <View style={styles.deepDiveCardTitle}>
+                          <Text style={[styles.deepDiveCardName, { color: isDarkMode ? colors.text : '#111827' }]}>
+                            {option.name}
+                          </Text>
+                          <Text style={[styles.deepDiveCardDescription, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                            {option.description}
+                          </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color={isDarkMode ? colors.textSecondary : '#9ca3af'} />
+                      </View>
+                    </TouchableOpacity>
+                  </Animatable.View>
                 ))}
               </View>
-            </Animatable.View>
-          )}
+            </View>
+          </Animatable.View>
+
+          {/* Action Buttons */}
+          <Animatable.View animation="fadeInUp" duration={800} delay={1200}>
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={[styles.secondaryButton, { borderColor: isDarkMode ? colors.border : '#d1d5db' }]}
+                onPress={handleNewAnalysis}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="add" size={20} color={isDarkMode ? colors.text : '#374151'} />
+                <Text style={[styles.secondaryButtonText, { color: isDarkMode ? colors.text : '#374151' }]}>
+                  New Analysis
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.primaryButton, { backgroundColor: '#f87171' }]}
+                onPress={handleShare}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="share" size={20} color="#ffffff" />
+                <Text style={styles.primaryButtonText}>Share Results</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Launch Button */}
+            <View style={styles.launchButtonContainer}>
+              <TouchableOpacity
+                style={[styles.launchButton, { backgroundColor: '#ef4444' }]}
+                onPress={handleLaunch}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="rocket" size={24} color="#ffffff" />
+                <Text style={styles.launchButtonText}>Ready to Launch 🚀</Text>
+                <Text style={styles.launchButtonSubtext}>Export documents & get launch-ready materials</Text>
+              </TouchableOpacity>
+            </View>
+          </Animatable.View>
         </View>
 
         {/* Footer */}
@@ -296,45 +293,6 @@ export default function AnalysisScreen() {
           </Text>
         </View>
       </ScrollView>
-
-      {/* Analysis Type Picker Modal */}
-      <Modal
-        visible={showTypePicker}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowTypePicker(false)}
-      >
-        <TouchableOpacity 
-          style={styles.modalOverlay}
-          onPress={() => setShowTypePicker(false)}
-          activeOpacity={1}
-        >
-          <View style={[styles.modalContent, { backgroundColor: isDarkMode ? colors.surface : '#ffffff' }]}>
-            <Text style={[styles.modalTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Select Analysis Type</Text>
-            {analysisTypes.map((type) => (
-              <TouchableOpacity
-                key={type.id}
-                style={[
-                  styles.modalOption,
-                  analysisType === type.id && { backgroundColor: isDarkMode ? colors.primary + '20' : '#fef2f2' }
-                ]}
-                onPress={() => {
-                  setAnalysisType(type.id);
-                  setShowTypePicker(false);
-                }}
-              >
-                <Ionicons name={type.icon} size={24} color={analysisType === type.id ? '#ef4444' : (isDarkMode ? colors.textSecondary : '#6b7280')} />
-                <Text style={[
-                  styles.modalOptionText,
-                  { color: analysisType === type.id ? '#ef4444' : (isDarkMode ? colors.text : '#111827') }
-                ]}>
-                  {type.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -358,6 +316,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16, // 1rem
+    flex: 1,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   logoContainer: {
     position: 'relative',
@@ -378,6 +344,7 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     flexDirection: 'column',
+    flex: 1,
   },
   title: {
     fontSize: 24, // 1.5rem
@@ -413,7 +380,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 32, // 2rem
-    marginBottom: 64, // 4rem
+    marginBottom: 48, // 3rem
   },
   step: {
     flexDirection: 'column',
@@ -448,136 +415,167 @@ const styles = StyleSheet.create({
   stepLabelCompleted: {
     color: '#22c55e',
   },
-  formContainer: {
-    maxWidth: 512, // 32rem
-    width: '100%',
-    alignSelf: 'center',
+  ideaSummary: {
+    padding: 24,
+    borderRadius: 16,
+    marginBottom: 24, // 1.5rem
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  formTitle: {
-    fontSize: 30, // 1.875rem
+  ideaHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12, // 0.75rem
+    marginBottom: 16, // 1rem
+  },
+  ideaTitle: {
+    fontSize: 20, // 1.25rem
     fontWeight: '700',
+    fontFamily: 'System',
+  },
+  ideaText: {
+    fontSize: 16, // 1rem
+    lineHeight: 24,
+    fontFamily: 'System',
+  },
+  analysisResults: {
+    padding: 24,
+    borderRadius: 16,
+    marginBottom: 32, // 2rem
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  analysisHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16, // 1rem
+  },
+  analysisHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12, // 0.75rem
+  },
+  analysisTitle: {
+    fontSize: 20, // 1.25rem
+    fontWeight: '700',
+    fontFamily: 'System',
+  },
+  analysisScore: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    backgroundColor: '#dcfce7',
+    borderRadius: 12,
+  },
+  scoreText: {
+    fontSize: 12, // 0.75rem
+    fontWeight: '600',
+    fontFamily: 'System',
+  },
+  analysisContent: {
+    maxHeight: 300,
+  },
+  analysisText: {
+    fontSize: 16, // 1rem
+    lineHeight: 24,
+    fontFamily: 'System',
+  },
+  deepDiveSection: {
+    marginBottom: 32, // 2rem
+  },
+  deepDiveTitle: {
+    fontSize: 24, // 1.5rem
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 8, // 0.5rem
+    fontFamily: 'System',
+  },
+  deepDiveSubtitle: {
+    fontSize: 16, // 1rem
     textAlign: 'center',
     marginBottom: 32, // 2rem
     fontFamily: 'System',
   },
-  form: {
-    flexDirection: 'column',
-    gap: 24, // 1.5rem
+  deepDiveGrid: {
+    gap: 16, // 1rem
   },
-  inputGroup: {
-    flexDirection: 'column',
-    gap: 8, // 0.5rem
+  deepDiveCard: {
+    padding: 20,
+    borderRadius: 16,
+    borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  inputLabel: {
-    fontSize: 16,
+  deepDiveCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16, // 1rem
+  },
+  deepDiveIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deepDiveCardTitle: {
+    flex: 1,
+  },
+  deepDiveCardName: {
+    fontSize: 18, // 1.125rem
     fontWeight: '600',
+    marginBottom: 4, // 0.25rem
     fontFamily: 'System',
   },
-  textInput: {
-    padding: 12, // 0.75rem
-    fontSize: 16, // 1rem
-    borderWidth: 1,
-    borderRadius: 6, // 0.375rem
+  deepDiveCardDescription: {
+    fontSize: 14, // 0.875rem
+    lineHeight: 20,
     fontFamily: 'System',
   },
-  descriptionInput: {
-    padding: 12, // 0.75rem
-    fontSize: 16, // 1rem
-    borderWidth: 1,
-    borderRadius: 6, // 0.375rem
-    minHeight: 120,
-    fontFamily: 'System',
-    textAlignVertical: 'top',
-    lineHeight: 22,
-  },
-  typePicker: {
+  actionButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 6, // 0.375rem
-    padding: 12, // 0.75rem
+    gap: 16, // 1rem
+    marginBottom: 32, // 2rem
   },
-  typePickerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  typePickerText: {
-    fontSize: 16, // 1rem
-    fontFamily: 'System',
-  },
-  analyzeButton: {
+  secondaryButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8, // 0.5rem
-    borderRadius: 12, // 0.75rem
     paddingVertical: 16, // 1rem
-    paddingHorizontal: 16, // 1rem
-    marginTop: 8,
+    paddingHorizontal: 24, // 1.5rem
+    borderRadius: 12, // 0.75rem
+    borderWidth: 1,
   },
-  rotating: {
-    // Add rotation animation here if needed
+  secondaryButtonText: {
+    fontSize: 16, // 1rem
+    fontWeight: '500',
+    fontFamily: 'System',
   },
-  analyzeButtonText: {
+  primaryButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8, // 0.5rem
+    paddingVertical: 16, // 1rem
+    paddingHorizontal: 24, // 1.5rem
+    borderRadius: 12, // 0.75rem
+  },
+  primaryButtonText: {
     color: '#ffffff',
-    fontSize: 18, // 1.125rem
+    fontSize: 16, // 1rem
     fontWeight: '500',
-    fontFamily: 'System',
-  },
-  resultsContainer: {
-    marginTop: 32,
-    padding: 24,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  resultsTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 16,
-    fontFamily: 'System',
-  },
-  analysisContent: {
-    maxHeight: 400,
-  },
-  analysisText: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontFamily: 'System',
-  },
-  recentContainer: {
-    marginTop: 32,
-    padding: 24,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  recentTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 16,
-    fontFamily: 'System',
-  },
-  recentItem: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  recentItemName: {
-    fontSize: 16,
-    fontWeight: '500',
-    fontFamily: 'System',
-  },
-  recentItemDate: {
-    fontSize: 14,
-    marginTop: 4,
     fontFamily: 'System',
   },
   footer: {
@@ -593,37 +591,35 @@ const styles = StyleSheet.create({
   heart: {
     color: '#ef4444',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  launchButtonContainer: {
+    marginTop: 24, // 1.5rem
+    width: '100%',
   },
-  modalContent: {
-    margin: 20,
+  launchButton: {
+    padding: 20,
     borderRadius: 16,
-    padding: 24,
-    minWidth: 300,
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 16,
-    textAlign: 'center',
-    fontFamily: 'System',
-  },
-  modalOption: {
-    flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-    gap: 12,
+    justifyContent: 'center',
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  modalOptionText: {
-    fontSize: 16,
-    fontWeight: '500',
+  launchButtonText: {
+    color: '#ffffff',
+    fontSize: 20, // 1.25rem
+    fontWeight: '700',
     fontFamily: 'System',
+    marginBottom: 4,
+  },
+  launchButtonSubtext: {
+    color: '#ffffff',
+    fontSize: 14, // 0.875rem
+    fontWeight: '400',
+    fontFamily: 'System',
+    opacity: 0.9,
+    textAlign: 'center',
   },
 });
