@@ -389,19 +389,35 @@ const ProfileScreen = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={[styles.container, themeStyles.container, { backgroundColor: isDarkMode ? colors.background : '#f8f9fa' }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#FFFFFF' }]}>
       <ScrollView
         style={styles.scrollView}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#7B68EE']}
+            tintColor={'#7B68EE'}
+          />
+        }
       >
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: isDarkMode ? colors.surface : '#ffffff', borderBottomColor: isDarkMode ? colors.border : '#e5e7eb' }]}>
+        <View style={[
+          styles.header, 
+          { 
+            backgroundColor: isDarkMode ? colors.surface : '#FFFFFF', 
+            borderBottomColor: isDarkMode ? colors.border : '#D3D3D3',
+            shadowColor: '#7B68EE',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 6,
+            elevation: 4,
+          }
+        ]}>
           <View style={styles.headerLeft}>
             <View style={styles.logoContainer}>
-              <View style={styles.logo}>
+              <View style={[styles.logo, { backgroundColor: '#7B68EE' }]}>
                 <Ionicons name="person" size={24} color="#ffffff" />
                 <View style={styles.sparkles}>
                   <Ionicons name="sparkles" size={12} color="#ffffff" />
@@ -409,22 +425,22 @@ const ProfileScreen = ({ navigation }) => {
               </View>
             </View>
             <View style={styles.titleContainer}>
-              <Text style={[styles.title, { color: isDarkMode ? colors.text : '#111827' }]}>Profile</Text>
-              <Text style={[styles.subtitle, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+              <Text style={[styles.title, { color: isDarkMode ? colors.text : '#000000' }]}>Profile</Text>
+              <Text style={[styles.subtitle, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                 Your product journey dashboard
               </Text>
             </View>
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity style={[styles.iconButton, { backgroundColor: isDarkMode ? 'transparent' : 'transparent' }]} activeOpacity={0.7}>
-              <Ionicons name="notifications-outline" size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
+              <Ionicons name="notifications-outline" size={20} color={isDarkMode ? colors.textSecondary : '#666666'} />
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.iconButton, { backgroundColor: isDarkMode ? 'transparent' : 'transparent' }]} 
               onPress={() => navigation.navigate('Settings')}
               activeOpacity={0.7}
             >
-              <Ionicons name="settings-outline" size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
+              <Ionicons name="settings-outline" size={20} color={isDarkMode ? colors.textSecondary : '#666666'} />
             </TouchableOpacity>
           </View>
         </View>
@@ -436,51 +452,94 @@ const ProfileScreen = ({ navigation }) => {
             <View style={styles.progressSteps}>
               {/* Idea Step - Completed */}
               <View style={styles.step}>
-                <View style={[styles.stepIcon, styles.stepIconCompleted]}>
+                <View style={[
+                  styles.stepIcon, 
+                  styles.stepIconCompleted,
+                  {
+                    backgroundColor: '#7B68EE',
+                    shadowColor: '#7B68EE',
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 15,
+                    elevation: 12,
+                  }
+                ]}>
                   <Ionicons name="checkmark" size={32} color="#ffffff" />
                 </View>
-                <Text style={[styles.stepLabel, styles.stepLabelCompleted]}>Idea</Text>
+                <Text style={[styles.stepLabel, styles.stepLabelCompleted, { color: '#7B68EE' }]}>Idea</Text>
               </View>
 
               {/* Analysis Step - Completed */}
               <View style={styles.step}>
-                <View style={[styles.stepIcon, styles.stepIconCompleted]}>
+                <View style={[
+                  styles.stepIcon, 
+                  styles.stepIconCompleted,
+                  {
+                    backgroundColor: '#7B68EE',
+                    shadowColor: '#7B68EE',
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 15,
+                    elevation: 12,
+                  }
+                ]}>
                   <Ionicons name="checkmark" size={32} color="#ffffff" />
                 </View>
-                <Text style={[styles.stepLabel, styles.stepLabelCompleted]}>Analysis</Text>
+                <Text style={[styles.stepLabel, styles.stepLabelCompleted, { color: '#7B68EE' }]}>Analysis</Text>
               </View>
 
               {/* Launch Step - Active */}
               <View style={[styles.step, styles.stepActive]}>
-                <View style={[styles.stepIcon, styles.stepIconActive]}>
+                <View style={[
+                  styles.stepIcon, 
+                  styles.stepIconActive,
+                  {
+                    backgroundColor: '#7B68EE',
+                    shadowColor: '#7B68EE',
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 15,
+                    elevation: 12,
+                  }
+                ]}>
                   <Ionicons name="rocket" size={32} color="#ffffff" />
                 </View>
-                <Text style={[styles.stepLabel, styles.stepLabelActive]}>Launch</Text>
+                <Text style={[styles.stepLabel, styles.stepLabelActive, { color: '#666666' }]}>Launch</Text>
               </View>
             </View>
           </Animatable.View>
 
           {/* Profile Card */}
           <Animatable.View animation="fadeInUp" duration={800} delay={400}>
-            <View style={[styles.profileCard, { backgroundColor: isDarkMode ? colors.surface : '#ffffff' }]}>
+            <View style={[
+              styles.profileCard, 
+              { 
+                backgroundColor: isDarkMode ? colors.surface : '#FFFFFF',
+                shadowColor: '#7B68EE',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+                elevation: 8,
+              }
+            ]}>
               <View style={styles.profileHeader}>
                 <View style={styles.avatarContainer}>
-                  <View style={[styles.avatar, { backgroundColor: isDarkMode ? colors.primary : '#ef4444' }]}>
+                  <View style={[styles.avatar, { backgroundColor: '#7B68EE' }]}>
                     <Text style={styles.avatarText}>
                       {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
                     </Text>
                   </View>
                 </View>
                 <View style={styles.profileInfo}>
-                  <Text style={[styles.profileName, { color: isDarkMode ? colors.text : '#111827' }]}>
+                  <Text style={[styles.profileName, { color: isDarkMode ? colors.text : '#000000' }]}>
                     {user?.email || 'Product Manager'}
                   </Text>
-                  <Text style={[styles.profileRole, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                  <Text style={[styles.profileRole, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                     Innovation Explorer
                   </Text>
                 </View>
                 <TouchableOpacity style={styles.editButton} activeOpacity={0.7}>
-                  <Ionicons name="create-outline" size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
+                  <Ionicons name="create-outline" size={20} color={isDarkMode ? colors.textSecondary : '#666666'} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -488,25 +547,35 @@ const ProfileScreen = ({ navigation }) => {
 
           {/* Analytics Overview */}
           <Animatable.View animation="fadeInUp" duration={800} delay={600}>
-            <View style={[styles.analyticsCard, { backgroundColor: isDarkMode ? colors.surface : '#ffffff' }]}>
-              <Text style={[styles.sectionTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Analytics Overview</Text>
+            <View style={[
+              styles.analyticsCard, 
+              { 
+                backgroundColor: isDarkMode ? colors.surface : '#FFFFFF',
+                shadowColor: '#7B68EE',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+                elevation: 8,
+              }
+            ]}>
+              <Text style={[styles.sectionTitle, { color: isDarkMode ? colors.text : '#000000' }]}>Analytics Overview</Text>
               
               <View style={styles.statsGrid}>
                 <View style={styles.statItem}>
-                  <Text style={[styles.statNumber, { color: isDarkMode ? colors.text : '#111827' }]}>{stats.totalAnalyses}</Text>
-                  <Text style={[styles.statLabel, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>Total Analyses</Text>
+                  <Text style={[styles.statNumber, { color: '#7B68EE' }]}>{stats.totalAnalyses}</Text>
+                  <Text style={[styles.statLabel, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>Total Analyses</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={[styles.statNumber, { color: isDarkMode ? colors.text : '#111827' }]}>{stats.thisMonth}</Text>
-                  <Text style={[styles.statLabel, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>This Month</Text>
+                  <Text style={[styles.statNumber, { color: '#7B68EE' }]}>{stats.thisMonth}</Text>
+                  <Text style={[styles.statLabel, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>This Month</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={[styles.statNumber, { color: isDarkMode ? colors.text : '#111827' }]}>{stats.thisWeek}</Text>
-                  <Text style={[styles.statLabel, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>This Week</Text>
+                  <Text style={[styles.statNumber, { color: '#7B68EE' }]}>{stats.thisWeek}</Text>
+                  <Text style={[styles.statLabel, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>This Week</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={[styles.statNumber, { color: isDarkMode ? colors.text : '#111827' }]}>{stats.avgPerWeek}</Text>
-                  <Text style={[styles.statLabel, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>Avg/Week</Text>
+                  <Text style={[styles.statNumber, { color: '#7B68EE' }]}>{stats.avgPerWeek}</Text>
+                  <Text style={[styles.statLabel, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>Avg/Week</Text>
                 </View>
               </View>
             </View>
@@ -514,8 +583,18 @@ const ProfileScreen = ({ navigation }) => {
 
           {/* Settings */}
           <Animatable.View animation="fadeInUp" duration={800} delay={800}>
-            <View style={[styles.settingsCard, { backgroundColor: isDarkMode ? colors.surface : '#ffffff' }]}>
-              <Text style={[styles.sectionTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Settings</Text>
+            <View style={[
+              styles.settingsCard, 
+              { 
+                backgroundColor: isDarkMode ? colors.surface : '#FFFFFF',
+                shadowColor: '#7B68EE',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+                elevation: 8,
+              }
+            ]}>
+              <Text style={[styles.sectionTitle, { color: isDarkMode ? colors.text : '#000000' }]}>Settings</Text>
               
               <View style={styles.settingsList}>
                 <TouchableOpacity 
@@ -524,8 +603,8 @@ const ProfileScreen = ({ navigation }) => {
                   activeOpacity={0.7}
                 >
                   <View style={styles.settingLeft}>
-                    <Ionicons name="settings-outline" size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
-                    <Text style={[styles.settingText, { color: isDarkMode ? colors.text : '#333333' }]}>
+                    <Ionicons name="settings-outline" size={20} color={isDarkMode ? colors.textSecondary : '#666666'} />
+                    <Text style={[styles.settingText, { color: isDarkMode ? colors.text : '#000000' }]}>
                       App Settings
                     </Text>
                   </View>
@@ -534,8 +613,8 @@ const ProfileScreen = ({ navigation }) => {
 
                 <TouchableOpacity style={styles.settingItem} onPress={toggleTheme} activeOpacity={0.7}>
                   <View style={styles.settingLeft}>
-                    <Ionicons name={isDarkMode ? "moon" : "sunny"} size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
-                    <Text style={[styles.settingText, { color: isDarkMode ? colors.text : '#333333' }]}>
+                    <Ionicons name={isDarkMode ? "moon" : "sunny"} size={20} color={isDarkMode ? colors.textSecondary : '#666666'} />
+                    <Text style={[styles.settingText, { color: isDarkMode ? colors.text : '#000000' }]}>
                       {isDarkMode ? 'Dark Mode' : 'Light Mode'}
                     </Text>
                   </View>
@@ -544,16 +623,16 @@ const ProfileScreen = ({ navigation }) => {
 
                 <TouchableOpacity style={styles.settingItem} onPress={exportAnalyses} activeOpacity={0.7}>
                   <View style={styles.settingLeft}>
-                    <Ionicons name="download-outline" size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
-                    <Text style={[styles.settingText, { color: isDarkMode ? colors.text : '#333333' }]}>Export Data</Text>
+                    <Ionicons name="download-outline" size={20} color={isDarkMode ? colors.textSecondary : '#666666'} />
+                    <Text style={[styles.settingText, { color: isDarkMode ? colors.text : '#000000' }]}>Export Data</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={isDarkMode ? colors.textSecondary : '#9ca3af'} />
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.settingItem} onPress={handleSignOut} activeOpacity={0.7}>
                   <View style={styles.settingLeft}>
-                    <Ionicons name="log-out-outline" size={20} color="#ef4444" />
-                    <Text style={[styles.settingText, { color: '#ef4444' }]}>Sign Out</Text>
+                    <Ionicons name="log-out-outline" size={20} color="#7B68EE" />
+                    <Text style={[styles.settingText, { color: '#7B68EE' }]}>Sign Out</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={isDarkMode ? colors.textSecondary : '#9ca3af'} />
                 </TouchableOpacity>
@@ -564,7 +643,7 @@ const ProfileScreen = ({ navigation }) => {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+          <Text style={[styles.footerText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
             Powered by OpenAI • Made with <Text style={styles.heart}>❤️</Text> for Product Innovators
           </Text>
         </View>

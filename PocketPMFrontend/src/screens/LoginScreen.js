@@ -44,7 +44,7 @@ export default function LoginScreen({ navigation }) {
   const isButtonDisabled = !email.trim() || !password.trim() || loading;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#f8f9fa' }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#FFFFFF' }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -58,15 +58,15 @@ export default function LoginScreen({ navigation }) {
           <Animatable.View animation="fadeInDown" duration={800} delay={200}>
             <View style={styles.header}>
               <View style={styles.logoContainer}>
-                <View style={styles.logo}>
+                <View style={[styles.logo, { backgroundColor: '#7B68EE' }]}>
                   <Ionicons name="create" size={32} color="#ffffff" />
                   <View style={styles.sparkles}>
                     <Ionicons name="sparkles" size={16} color="#ffffff" />
                   </View>
                 </View>
               </View>
-              <Text style={[styles.headerTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Pocket PM</Text>
-              <Text style={[styles.headerSubtitle, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+              <Text style={[styles.headerTitle, { color: isDarkMode ? colors.text : '#000000' }]}>Pocket PM</Text>
+              <Text style={[styles.headerSubtitle, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                 From Idea → Execution → Launch
               </Text>
             </View>
@@ -76,22 +76,32 @@ export default function LoginScreen({ navigation }) {
           <View style={styles.mainContent}>
             {/* Welcome Card */}
             <Animatable.View animation="fadeInUp" duration={800} delay={400}>
-              <View style={[styles.welcomeCard, { backgroundColor: isDarkMode ? colors.surface : '#ffffff' }]}>
-                <Text style={[styles.welcomeTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Welcome Back</Text>
-                <Text style={[styles.welcomeSubtitle, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+              <View style={[
+                styles.welcomeCard, 
+                { 
+                  backgroundColor: isDarkMode ? colors.surface : '#FFFFFF',
+                  shadowColor: '#7B68EE',
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.18,
+                  shadowRadius: 16,
+                  elevation: 10,
+                }
+              ]}>
+                <Text style={[styles.welcomeTitle, { color: isDarkMode ? colors.text : '#000000' }]}>Welcome Back</Text>
+                <Text style={[styles.welcomeSubtitle, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                   Sign in to analyze your next big idea
                 </Text>
 
                 <View style={styles.form}>
                   <View style={styles.inputGroup}>
-                    <Text style={[styles.inputLabel, { color: isDarkMode ? colors.text : '#333333' }]}>Email</Text>
+                    <Text style={[styles.inputLabel, { color: isDarkMode ? colors.text : '#000000' }]}>Email</Text>
                     <TextInput
                       style={[
                         styles.textInput,
                         {
-                          backgroundColor: isDarkMode ? colors.input : '#ffffff',
-                          borderColor: isDarkMode ? colors.border : '#d1d5db',
-                          color: isDarkMode ? colors.text : '#333333'
+                          backgroundColor: isDarkMode ? colors.input : '#FFFFFF',
+                          borderColor: isDarkMode ? colors.border : '#D3D3D3',
+                          color: isDarkMode ? colors.text : '#000000'
                         }
                       ]}
                       value={email}
@@ -105,14 +115,14 @@ export default function LoginScreen({ navigation }) {
                   </View>
 
                   <View style={styles.inputGroup}>
-                    <Text style={[styles.inputLabel, { color: isDarkMode ? colors.text : '#333333' }]}>Password</Text>
+                    <Text style={[styles.inputLabel, { color: isDarkMode ? colors.text : '#000000' }]}>Password</Text>
                     <TextInput
                       style={[
                         styles.textInput,
                         {
-                          backgroundColor: isDarkMode ? colors.input : '#ffffff',
-                          borderColor: isDarkMode ? colors.border : '#d1d5db',
-                          color: isDarkMode ? colors.text : '#333333'
+                          backgroundColor: isDarkMode ? colors.input : '#FFFFFF',
+                          borderColor: isDarkMode ? colors.border : '#D3D3D3',
+                          color: isDarkMode ? colors.text : '#000000'
                         }
                       ]}
                       value={password}
@@ -129,7 +139,12 @@ export default function LoginScreen({ navigation }) {
                       styles.loginButton,
                       {
                         opacity: isButtonDisabled ? 0.5 : 1,
-                        backgroundColor: isButtonDisabled ? '#fca5a5' : '#f87171'
+                        backgroundColor: isButtonDisabled ? '#9B9BEE' : '#7B68EE',
+                        shadowColor: '#7B68EE',
+                        shadowOffset: { width: 0, height: 6 },
+                        shadowOpacity: isButtonDisabled ? 0.1 : 0.25,
+                        shadowRadius: 16,
+                        elevation: isButtonDisabled ? 4 : 12,
                       }
                     ]}
                     onPress={handleLogin}
@@ -150,25 +165,30 @@ export default function LoginScreen({ navigation }) {
                   </TouchableOpacity>
 
                   <View style={styles.divider}>
-                    <View style={[styles.dividerLine, { backgroundColor: isDarkMode ? colors.border : '#e5e7eb' }]} />
-                    <Text style={[styles.dividerText, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>or</Text>
-                    <View style={[styles.dividerLine, { backgroundColor: isDarkMode ? colors.border : '#e5e7eb' }]} />
+                    <View style={[styles.dividerLine, { backgroundColor: isDarkMode ? colors.border : '#D3D3D3' }]} />
+                    <Text style={[styles.dividerText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>or</Text>
+                    <View style={[styles.dividerLine, { backgroundColor: isDarkMode ? colors.border : '#D3D3D3' }]} />
                   </View>
 
                   <TouchableOpacity
                     style={[
                       styles.registerButton,
                       {
-                        borderColor: isDarkMode ? colors.border : '#d1d5db',
-                        backgroundColor: isDarkMode ? 'transparent' : '#ffffff'
+                        borderColor: isDarkMode ? colors.border : '#D3D3D3',
+                        backgroundColor: isDarkMode ? 'transparent' : '#FFFFFF',
+                        shadowColor: '#7B68EE',
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.15,
+                        shadowRadius: 12,
+                        elevation: 8,
                       }
                     ]}
                     onPress={() => navigation.navigate('Register')}
                     disabled={loading}
                     activeOpacity={0.8}
                   >
-                    <Ionicons name="person-add" size={20} color={isDarkMode ? colors.text : '#374151'} />
-                    <Text style={[styles.registerButtonText, { color: isDarkMode ? colors.text : '#374151' }]}>
+                    <Ionicons name="person-add" size={20} color={isDarkMode ? colors.text : '#666666'} />
+                    <Text style={[styles.registerButtonText, { color: isDarkMode ? colors.text : '#666666' }]}>
                       Create New Account
                     </Text>
                   </TouchableOpacity>
@@ -178,12 +198,22 @@ export default function LoginScreen({ navigation }) {
 
             {/* Demo Info */}
             <Animatable.View animation="fadeInUp" duration={800} delay={600}>
-              <View style={[styles.demoCard, { backgroundColor: isDarkMode ? colors.surface : '#ffffff' }]}>
+              <View style={[
+                styles.demoCard, 
+                { 
+                  backgroundColor: isDarkMode ? colors.surface : '#FFFFFF',
+                  shadowColor: '#7B68EE',
+                  shadowOffset: { width: 0, height: 3 },
+                  shadowOpacity: 0.12,
+                  shadowRadius: 8,
+                  elevation: 5,
+                }
+              ]}>
                 <View style={styles.demoHeader}>
-                  <Ionicons name="information-circle" size={20} color="#ef4444" />
-                  <Text style={[styles.demoTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Demo Account</Text>
+                  <Ionicons name="information-circle" size={20} color="#7B68EE" />
+                  <Text style={[styles.demoTitle, { color: isDarkMode ? colors.text : '#000000' }]}>Demo Account</Text>
                 </View>
-                <Text style={[styles.demoText, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                <Text style={[styles.demoText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                   Create a real account to get started with Supabase authentication and save your analyses.
                 </Text>
               </View>
@@ -193,7 +223,7 @@ export default function LoginScreen({ navigation }) {
           {/* Footer */}
           <Animatable.View animation="fadeIn" duration={800} delay={800}>
             <View style={styles.footer}>
-              <Text style={[styles.footerText, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+              <Text style={[styles.footerText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                 Powered by OpenAI • Made with <Text style={styles.heart}>❤️</Text> for Product Innovators
               </Text>
             </View>
