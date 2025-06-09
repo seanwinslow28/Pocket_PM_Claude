@@ -30,6 +30,64 @@ export default function HomeScreen({ navigation }) {
   const [recentAnalyses, setRecentAnalyses] = useState([]);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [testMode, setTestMode] = useState(false);
+  const [showWritingTips, setShowWritingTips] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Input validation and helper functions
+  const getCharacterCount = () => idea.length;
+  const getWordCount = () => idea.trim().split(/\s+/).filter(word => word.length > 0).length;
+  const isIdeaTooShort = () => idea.trim().length < 20;
+  const isIdeaTooLong = () => idea.length > 1000;
+  const hasGoodLength = () => idea.trim().length >= 50 && idea.length <= 500;
+
+  const getInputValidation = () => {
+    if (idea.trim().length === 0) return { type: 'empty', message: 'Tell us about your product idea' };
+    if (isIdeaTooShort()) return { type: 'warning', message: 'Add more details for better analysis' };
+    if (isIdeaTooLong()) return { type: 'error', message: 'Please keep it under 1000 characters' };
+    if (hasGoodLength()) return { type: 'success', message: 'Perfect! Ready for analysis' };
+    return { type: 'info', message: 'Looking good, add more details if needed' };
+  };
+
+  const validation = getInputValidation();
+
+  // Enhanced example ideas with better variety
+  const exampleIdeas = [
+    {
+      category: '🏃‍♀️ Health & Fitness',
+      text: "A mobile app that helps people find and book local fitness classes with real-time availability, instructor ratings, and flexible payment options",
+      short: "Fitness class finder"
+    },
+    {
+      category: '🍽️ Food & Sustainability', 
+      text: "An AI-powered meal planning service that creates personalized weekly menus based on dietary preferences, reduces food waste by optimizing portions, and connects users with local farmers",
+      short: "Smart meal planner"
+    },
+    {
+      category: '💼 Remote Work',
+      text: "A platform connecting remote workers with local coffee shops, co-working spaces, and quiet venues, featuring wifi speed tests, noise levels, and booking capabilities",
+      short: "Remote workspace finder"
+    },
+    {
+      category: '🎓 Education',
+      text: "An interactive learning platform that uses gamification and AI to help adults learn new skills through bite-sized lessons, peer collaboration, and real-world projects",
+      short: "Adult skill learning"
+    },
+    {
+      category: '🏠 Home Services',
+      text: "A marketplace for trusted local service providers (cleaning, repairs, gardening) with instant booking, transparent pricing, and quality guarantees",
+      short: "Home services marketplace"
+    },
+    {
+      category: '💰 Financial Planning',
+      text: "A personal finance app that helps young adults build wealth through automated savings, investment education, and goal-based financial planning with social features",
+      short: "Youth wealth builder"
+    }
+  ];
+
+  const getRandomExample = () => {
+    const randomIndex = Math.floor(Math.random() * exampleIdeas.length);
+    return exampleIdeas[randomIndex];
+  };
 
   useEffect(() => {
     loadUserData();
@@ -82,17 +140,29 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleAnalyze = async () => {
-    if (!idea.trim()) {
+    if (!idea.trim() || isIdeaTooLong()) {
       return;
     }
 
-    // Navigate to loading screen with the idea
-    navigation.navigate('Loading', { 
-      idea: idea.trim(),
-    });
+    setIsAnalyzing(true);
+    
+    try {
+      // Small delay for better UX 
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Navigate to loading screen with the idea
+      navigation.navigate('Loading', { 
+        idea: idea.trim(),
+      });
+    } catch (error) {
+      console.error('Navigation failed:', error);
+      Alert.alert('Error', 'Failed to start analysis. Please try again.');
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
-  const isButtonDisabled = !idea.trim();
+  const isButtonDisabled = !idea.trim() || isIdeaTooLong() || isAnalyzing;
 
   const SettingsModal = () => (
     <Modal
@@ -257,13 +327,76 @@ export default function HomeScreen({ navigation }) {
               </Text>
               
               <View style={styles.form}>
+                {/* Input Header */}
+                <View style={styles.inputHeader}>
+                  <View style={styles.inputHeaderLeft}>
+                    <Text style={[styles.inputLabel, { color: isDarkMode ? colors.text : '#111827' }]}>
+                      Your Product Idea
+                    </Text>
+                    <TouchableOpacity 
+                      style={styles.tipsButton}
+                      onPress={() => setShowWritingTips(!showWritingTips)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="help-circle-outline" size={16} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
+                      <Text style={[styles.tipsButtonText, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                        Writing tips
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.inputHeaderRight}>
+                    <Text style={[
+                      styles.characterCount, 
+                      { 
+                        color: isIdeaTooLong() ? '#ef4444' : 
+                               hasGoodLength() ? '#22c55e' : 
+                               isDarkMode ? colors.textSecondary : '#6b7280'
+                      }
+                    ]}>
+                      {getCharacterCount()}/1000
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Writing Tips (collapsible) */}
+                {showWritingTips && (
+                  <Animatable.View 
+                    animation="fadeInDown" 
+                    duration={300}
+                    style={[styles.writingTips, { backgroundColor: isDarkMode ? colors.surface : '#f8fafc', borderColor: isDarkMode ? colors.border : '#e2e8f0' }]}
+                  >
+                    <Text style={[styles.writingTipsTitle, { color: isDarkMode ? colors.text : '#111827' }]}>
+                      ✨ How to write a great idea description:
+                    </Text>
+                    <View style={styles.tipsList}>
+                      <Text style={[styles.tipItem, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                        • <Text style={styles.tipBold}>Problem:</Text> What issue does it solve?
+                      </Text>
+                      <Text style={[styles.tipItem, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                        • <Text style={styles.tipBold}>Solution:</Text> How does your idea solve it?
+                      </Text>
+                      <Text style={[styles.tipItem, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                        • <Text style={styles.tipBold}>Target:</Text> Who is this for?
+                      </Text>
+                      <Text style={[styles.tipItem, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                        • <Text style={styles.tipBold}>Unique:</Text> What makes it different?
+                      </Text>
+                    </View>
+                  </Animatable.View>
+                )}
+
+                {/* Text Input */}
                 <TextInput
                   style={[
                     styles.ideaTextarea, 
                     { 
                       backgroundColor: isDarkMode ? colors.input : '#ffffff',
-                      borderColor: isDarkMode ? colors.border : '#d1d5db',
-                      color: isDarkMode ? colors.text : '#333333'
+                      borderColor: validation.type === 'error' ? '#ef4444' : 
+                                   validation.type === 'success' ? '#22c55e' :
+                                   validation.type === 'warning' ? '#f59e0b' :
+                                   isDarkMode ? colors.border : '#d1d5db',
+                      color: isDarkMode ? colors.text : '#333333',
+                      borderWidth: 2,
                     }
                   ]}
                   value={idea}
@@ -272,22 +405,76 @@ export default function HomeScreen({ navigation }) {
                   placeholderTextColor={isDarkMode ? colors.placeholder : '#9ca3af'}
                   multiline
                   textAlignVertical="top"
+                  maxLength={1000}
                 />
 
+                {/* Input Validation Message */}
+                <View style={styles.validationContainer}>
+                  <View style={styles.validationLeft}>
+                    <Ionicons 
+                      name={
+                        validation.type === 'success' ? 'checkmark-circle' :
+                        validation.type === 'error' ? 'close-circle' :
+                        validation.type === 'warning' ? 'warning' :
+                        'information-circle'
+                      } 
+                      size={16} 
+                      color={
+                        validation.type === 'success' ? '#22c55e' :
+                        validation.type === 'error' ? '#ef4444' :
+                        validation.type === 'warning' ? '#f59e0b' :
+                        isDarkMode ? colors.textSecondary : '#6b7280'
+                      } 
+                    />
+                    <Text style={[
+                      styles.validationMessage,
+                      { 
+                        color: validation.type === 'success' ? '#22c55e' :
+                               validation.type === 'error' ? '#ef4444' :
+                               validation.type === 'warning' ? '#f59e0b' :
+                               isDarkMode ? colors.textSecondary : '#6b7280'
+                      }
+                    ]}>
+                      {validation.message}
+                    </Text>
+                  </View>
+                  {idea.trim().length > 0 && (
+                    <Text style={[styles.wordCount, { color: isDarkMode ? colors.textSecondary : '#9ca3af' }]}>
+                      {getWordCount()} words
+                    </Text>
+                  )}
+                </View>
+
+                {/* Enhanced Analyze Button */}
                 <TouchableOpacity
                   style={[
                     styles.analyzeButton,
                     {
-                      opacity: isButtonDisabled ? 0.5 : 1,
-                      backgroundColor: isButtonDisabled ? '#fca5a5' : '#f87171'
+                      opacity: isButtonDisabled ? 0.6 : 1,
+                      backgroundColor: validation.type === 'success' ? '#22c55e' :
+                                       isIdeaTooLong() ? '#ef4444' : 
+                                       isAnalyzing ? '#f59e0b' : '#f87171'
                     }
                   ]}
                   onPress={handleAnalyze}
                   disabled={isButtonDisabled}
                   activeOpacity={isButtonDisabled ? 1 : 0.8}
                 >
-                  <Ionicons name="sparkles" size={20} color="#ffffff" />
-                  <Text style={styles.analyzeButtonText}>Analyze My Idea</Text>
+                  {isAnalyzing ? (
+                    <>
+                      <Ionicons name="hourglass" size={20} color="#ffffff" />
+                      <Text style={styles.analyzeButtonText}>Starting Analysis...</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Ionicons name="sparkles" size={20} color="#ffffff" />
+                      <Text style={styles.analyzeButtonText}>
+                        {validation.type === 'success' ? 'Analyze My Idea ✨' : 
+                         isIdeaTooLong() ? 'Too Long - Shorten First' :
+                         'Analyze My Idea'}
+                      </Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
 
@@ -295,26 +482,35 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.examplesContainer}>
                 <Text style={[styles.examplesTitle, { color: isDarkMode ? colors.text : '#111827' }]}>💡 Need inspiration?</Text>
                 <View style={styles.examplesList}>
+                  {exampleIdeas.slice(0, 3).map((example, index) => (
+                    <TouchableOpacity 
+                      key={index}
+                      style={[styles.exampleChip, { backgroundColor: isDarkMode ? colors.surface : '#f3f4f6' }]}
+                      onPress={() => setIdea(example.text)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.exampleCategory, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                        {example.category}
+                      </Text>
+                      <Text style={[styles.exampleText, { color: isDarkMode ? colors.text : '#374151' }]}>
+                        {example.short}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                  
+                  {/* Random Example Button */}
                   <TouchableOpacity 
-                    style={[styles.exampleChip, { backgroundColor: isDarkMode ? colors.surface : '#f3f4f6' }]}
-                    onPress={() => setIdea("A mobile app that helps people find and book local fitness classes")}
+                    style={[styles.randomExampleChip, { borderColor: isDarkMode ? colors.border : '#d1d5db' }]}
+                    onPress={() => {
+                      const randomExample = getRandomExample();
+                      setIdea(randomExample.text);
+                    }}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.exampleText, { color: isDarkMode ? colors.text : '#374151' }]}>Fitness class finder</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[styles.exampleChip, { backgroundColor: isDarkMode ? colors.surface : '#f3f4f6' }]}
-                    onPress={() => setIdea("An AI-powered meal planning service that reduces food waste")}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.exampleText, { color: isDarkMode ? colors.text : '#374151' }]}>Smart meal planner</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[styles.exampleChip, { backgroundColor: isDarkMode ? colors.surface : '#f3f4f6' }]}
-                    onPress={() => setIdea("A platform connecting remote workers with local coffee shops for workspace")}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.exampleText, { color: isDarkMode ? colors.text : '#374151' }]}>Remote workspace finder</Text>
+                    <Ionicons name="shuffle" size={16} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
+                    <Text style={[styles.randomExampleText, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                      Random idea
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -461,14 +657,65 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     gap: 24, // 1.5rem
   },
-  ideaTextarea: {
-    minHeight: 200,
-    padding: 12, // 0.75rem
-    fontSize: 16, // 1rem
-    borderWidth: 1,
-    borderRadius: 6, // 0.375rem
+  inputHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  inputHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  inputLabel: {
+    fontSize: 18,
+    fontWeight: '600',
     fontFamily: 'System',
-    lineHeight: 22,
+  },
+  tipsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  tipsButtonText: {
+    fontSize: 14,
+    fontWeight: '400',
+    fontFamily: 'System',
+  },
+  inputHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  characterCount: {
+    fontSize: 14,
+    fontWeight: '500',
+    fontFamily: 'System',
+  },
+  validationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  validationLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
+  validationMessage: {
+    fontSize: 14,
+    fontWeight: '500',
+    fontFamily: 'System',
+  },
+  wordCount: {
+    fontSize: 12,
+    fontWeight: '400',
+    fontFamily: 'System',
   },
   analyzeButton: {
     flexDirection: 'row',
@@ -498,20 +745,52 @@ const styles = StyleSheet.create({
   examplesList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 12, // 0.75rem
+    gap: 8,
+    marginTop: 12,
   },
   exampleChip: {
-    paddingVertical: 8, // 0.5rem
-    paddingHorizontal: 16, // 1rem
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    padding: 16,
+    marginRight: 12,
+    marginBottom: 12,
+    borderRadius: 16,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    minWidth: 180,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  exampleCategory: {
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'System',
+    marginBottom: 6,
+    opacity: 0.8,
   },
   exampleText: {
-    fontSize: 14, // 0.875rem
+    fontSize: 14,
     fontWeight: '500',
     fontFamily: 'System',
+    lineHeight: 18,
+  },
+  randomExampleChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderRadius: 16,
+    minWidth: 120,
+  },
+  randomExampleText: {
+    fontSize: 14,
+    fontWeight: '500',
+    fontFamily: 'System',
+    marginLeft: 6,
   },
   footer: {
     textAlign: 'center',
@@ -619,5 +898,40 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontWeight: '700',
+  },
+  writingTips: {
+    padding: 16,
+    borderWidth: 1,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  writingTipsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'System',
+    marginBottom: 12,
+  },
+  tipsList: {
+    gap: 8,
+  },
+  tipItem: {
+    fontSize: 14,
+    fontWeight: '400',
+    fontFamily: 'System',
+    lineHeight: 20,
+  },
+  tipBold: {
+    fontWeight: '600',
+  },
+  ideaTextarea: {
+    minHeight: 160,
+    padding: 16,
+    fontSize: 16,
+    borderWidth: 2,
+    borderRadius: 12,
+    fontFamily: 'System',
+    lineHeight: 24,
+    textAlignVertical: 'top',
+    marginBottom: 12,
   },
 });

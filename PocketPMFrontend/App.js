@@ -13,7 +13,7 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import LoadingScreen from './src/screens/LoadingScreen';
 import AnalysisScreen from './src/screens/AnalysisScreen';
-import DeepDiveScreen from './src/screens/DeepDiveScreen';
+import DeepAnalysisScreen from './src/screens/DeepAnalysisScreen';
 import LaunchScreen from './src/screens/LaunchScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
@@ -50,7 +50,7 @@ function HomeStack() {
       <Stack.Screen name="HomeMain" component={HomeScreen} />
       <Stack.Screen name="Loading" component={LoadingScreen} />
       <Stack.Screen name="AnalysisResults" component={AnalysisScreen} />
-      <Stack.Screen name="DeepDive" component={DeepDiveScreen} />
+      <Stack.Screen name="DeepDive" component={DeepAnalysisScreen} />
       <Stack.Screen name="Launch" component={LaunchScreen} />
     </Stack.Navigator>
   );
@@ -64,7 +64,7 @@ function AnalysisStack() {
         headerShown: false,
       }}
     >
-      <Stack.Screen name="AnalysisMain" component={AnalysisScreen} />
+      <Stack.Screen name="AnalysisMain" component={DeepAnalysisScreen} />
     </Stack.Navigator>
   );
 }
@@ -107,7 +107,11 @@ function TabNavigator() {
       })}
     >
       <Tab.Screen name="Home" component={HomeStack} />
-      <Tab.Screen name="Analysis" component={AnalysisStack} />
+      <Tab.Screen 
+        name="Analysis" 
+        component={AnalysisStack}
+        options={{ title: 'Deep Analysis' }}
+      />
       <Tab.Screen name="Profile" component={ProfileStack} />
     </Tab.Navigator>
   );
