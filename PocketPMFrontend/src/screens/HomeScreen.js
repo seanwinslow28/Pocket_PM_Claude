@@ -53,32 +53,32 @@ export default function HomeScreen({ navigation }) {
   // Enhanced example ideas with better variety
   const exampleIdeas = [
     {
-      category: '🏃‍♀️ Health & Fitness',
+      category: 'Health & Fitness',
       text: "A mobile app that helps people find and book local fitness classes with real-time availability, instructor ratings, and flexible payment options",
       short: "Fitness class finder"
     },
     {
-      category: '🍽️ Food & Sustainability', 
+      category: 'Food & Sustainability', 
       text: "An AI-powered meal planning service that creates personalized weekly menus based on dietary preferences, reduces food waste by optimizing portions, and connects users with local farmers",
       short: "Smart meal planner"
     },
     {
-      category: '💼 Remote Work',
+      category: 'Remote Work',
       text: "A platform connecting remote workers with local coffee shops, co-working spaces, and quiet venues, featuring wifi speed tests, noise levels, and booking capabilities",
       short: "Remote workspace finder"
     },
     {
-      category: '🎓 Education',
+      category: 'Education',
       text: "An interactive learning platform that uses gamification and AI to help adults learn new skills through bite-sized lessons, peer collaboration, and real-world projects",
       short: "Adult skill learning"
     },
     {
-      category: '🏠 Home Services',
+      category: 'Home Services',
       text: "A marketplace for trusted local service providers (cleaning, repairs, gardening) with instant booking, transparent pricing, and quality guarantees",
       short: "Home services marketplace"
     },
     {
-      category: '💰 Financial Planning',
+      category: 'Financial Planning',
       text: "A personal finance app that helps young adults build wealth through automated savings, investment education, and goal-based financial planning with social features",
       short: "Youth wealth builder"
     }
@@ -171,13 +171,13 @@ export default function HomeScreen({ navigation }) {
       presentationStyle="pageSheet"
       onRequestClose={() => setShowSettingsModal(false)}
     >
-      <SafeAreaView style={[styles.modalContainer, { backgroundColor: isDarkMode ? colors.background : '#f8f9fa' }]}>
+      <SafeAreaView style={[styles.modalContainer, { backgroundColor: isDarkMode ? colors.background : '#FFFFFF' }]}>
         {/* Modal Header */}
-        <View style={[styles.modalHeader, { backgroundColor: isDarkMode ? colors.surface : '#ffffff', borderBottomColor: isDarkMode ? colors.border : '#e5e7eb' }]}>
+        <View style={[styles.modalHeader, { backgroundColor: isDarkMode ? colors.surface : '#FFFFE3', borderBottomColor: isDarkMode ? colors.border : '#D3D3D3' }]}>
           <TouchableOpacity onPress={() => setShowSettingsModal(false)} style={styles.closeButton} activeOpacity={0.7}>
-            <Ionicons name="close" size={24} color={isDarkMode ? colors.text : '#111827'} />
+            <Ionicons name="close" size={24} color={isDarkMode ? colors.text : '#000000'} />
           </TouchableOpacity>
-          <Text style={[styles.modalTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Settings</Text>
+          <Text style={[styles.modalTitle, { color: isDarkMode ? colors.text : '#000000' }]}>Settings</Text>
           <View style={styles.headerSpacer} />
         </View>
 
@@ -185,60 +185,57 @@ export default function HomeScreen({ navigation }) {
         <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
           {/* Development Section */}
           <View style={styles.modalSection}>
-            <Text style={[styles.modalSectionTitle, { color: isDarkMode ? colors.text : '#111827' }]}>
+            <Text style={[styles.modalSectionTitle, { color: isDarkMode ? colors.text : '#000000' }]}>
               🧪 Development
             </Text>
-            <Text style={[styles.modalSectionDescription, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+            <Text style={[styles.modalSectionDescription, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
               Settings for development and testing
             </Text>
 
-            <View style={[styles.settingItem, { backgroundColor: isDarkMode ? colors.surface : '#ffffff', borderColor: isDarkMode ? colors.border : '#e5e7eb' }]}>
+            <View style={[styles.settingItem, { backgroundColor: isDarkMode ? colors.surface : '#FFFFE3', borderColor: isDarkMode ? colors.border : '#D3D3D3' }]}>
               <View style={styles.settingItemLeft}>
-                <View style={[styles.settingIcon, { backgroundColor: colors.primary + '15' }]}>
-                  <Ionicons name="flask" size={24} color={colors.primary} />
+                <View style={[styles.settingIcon, { backgroundColor: '#7B68EE15' }]}>
+                  <Ionicons name="flask" size={24} color="#7B68EE" />
                 </View>
                 <View style={styles.settingItemText}>
-                  <Text style={[styles.settingTitle, { color: isDarkMode ? colors.text : '#111827' }]}>
+                  <Text style={[styles.settingTitle, { color: isDarkMode ? colors.text : '#000000' }]}>
                     Test Mode
                   </Text>
-                  <Text style={[styles.settingDescription, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
-                    {testMode 
-                      ? "Using dummy data - no OpenAI API calls" 
-                      : "Using real OpenAI API - costs money"
-                    }
+                  <Text style={[styles.settingDescription, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
+                    Use dummy data instead of real API calls
                   </Text>
                 </View>
               </View>
               <Switch
                 value={testMode}
                 onValueChange={handleTestModeToggle}
-                trackColor={{ false: '#e5e7eb', true: colors.primary + '30' }}
-                thumbColor={testMode ? colors.primary : '#9ca3af'}
+                trackColor={{ false: '#D3D3D3', true: '#7B68EE30' }}
+                thumbColor={testMode ? '#7B68EE' : '#9ca3af'}
+                ios_backgroundColor="#D3D3D3"
               />
             </View>
           </View>
 
           {/* Test Mode Info */}
           {testMode && (
-            <View style={[styles.infoCard, { backgroundColor: '#fef3c7', borderColor: '#f59e0b' }]}>
-              <View style={styles.infoHeader}>
-                <Ionicons name="warning" size={20} color="#f59e0b" />
-                <Text style={[styles.infoTitle, { color: '#92400e' }]}>Test Mode Active</Text>
+            <View style={[styles.infoCard, { backgroundColor: '#7B68EE15', borderColor: '#7B68EE' }]}>
+              <View style={styles.infoCardContent}>
+                <Ionicons name="warning" size={20} color="#7B68EE" />
+                <Text style={[styles.infoTitle, { color: '#7B68EE' }]}>Test Mode Active</Text>
               </View>
-              <Text style={[styles.infoDescription, { color: '#92400e' }]}>
-                All analysis requests will use dummy data. No OpenAI API calls will be made, so you won't be charged.
-                This is perfect for development and testing the app flow.
+              <Text style={[styles.infoDescription, { color: '#7B68EE' }]}>
+                Using dummy data. Toggle off to use real OpenAI API calls.
               </Text>
             </View>
           )}
 
           {/* Footer */}
           <View style={styles.modalFooter}>
-            <Text style={[styles.modalFooterText, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
-              Pocket PM v1.0.0
+            <Text style={[styles.modalFooterText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
+              Made with ❤️ for Product Innovators
             </Text>
-            <Text style={[styles.modalFooterText, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
-              Made with <Text style={styles.heart}>❤️</Text> for Product Innovators
+            <Text style={[styles.modalFooterText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
+              Version 1.0.0
             </Text>
           </View>
         </ScrollView>
@@ -247,19 +244,35 @@ export default function HomeScreen({ navigation }) {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#f8f9fa' }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#FFFFFF' }]}>
       <ScrollView
         style={styles.scrollView}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#7B68EE']}
+            tintColor="#7B68EE"
+          />
+        }
       >
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: isDarkMode ? colors.surface : '#ffffff', borderBottomColor: isDarkMode ? colors.border : '#e5e7eb' }]}>
+        <View style={[
+          styles.header, 
+          { 
+            backgroundColor: isDarkMode ? colors.surface : '#FFFFFF', 
+            borderBottomColor: isDarkMode ? colors.border : '#D3D3D3',
+            shadowColor: '#7B68EE',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 6,
+            elevation: 4,
+          }
+        ]}>
           <View style={styles.headerLeft}>
             <View style={styles.logoContainer}>
-              <View style={styles.logo}>
+              <View style={[styles.logo, { backgroundColor: '#7B68EE' }]}>
                 <Ionicons name="create" size={24} color="#ffffff" />
                 <View style={styles.sparkles}>
                   <Ionicons name="sparkles" size={12} color="#ffffff" />
@@ -267,50 +280,71 @@ export default function HomeScreen({ navigation }) {
               </View>
             </View>
             <View style={styles.titleContainer}>
-              <Text style={[styles.title, { color: isDarkMode ? colors.text : '#111827' }]}>Pocket PM</Text>
-              <Text style={[styles.subtitle, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
-                From Idea → Analysis → Launch
+              <Text style={[styles.title, { color: isDarkMode ? colors.text : '#000000' }]}>Pocket PM</Text>
+              <Text style={[styles.subtitle, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
+                AI-powered product analysis
               </Text>
             </View>
           </View>
           <View style={styles.headerRight}>
-            <TouchableOpacity style={[styles.iconButton, { backgroundColor: isDarkMode ? 'transparent' : 'transparent' }]} activeOpacity={0.7}>
-              <Ionicons name="time-outline" size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
+            <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('ProfileMain')} activeOpacity={0.7}>
+              <Ionicons name="time-outline" size={20} color={isDarkMode ? colors.textSecondary : '#666666'} />
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.iconButton, { backgroundColor: isDarkMode ? 'transparent' : 'transparent' }]} 
-              onPress={() => setShowSettingsModal(true)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="settings-outline" size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
+            <TouchableOpacity style={styles.iconButton} onPress={() => setShowSettingsModal(true)} activeOpacity={0.7}>
+              <Ionicons name="settings-outline" size={20} color={isDarkMode ? colors.textSecondary : '#666666'} />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Main Content */}
         <View style={styles.mainContent}>
-          {/* Progress Steps */}
-          <Animatable.View animation="fadeInUp" duration={800} delay={200}>
-            <View style={styles.progressSteps}>
-              {/* Idea Step - Active */}
-              <View style={[styles.step, styles.stepActive]}>
-                <View style={[styles.stepIcon, styles.stepIconActive]}>
+          {/* Steps */}
+          <Animatable.View animation="fadeInUp" duration={800} delay={400}>
+            <View style={styles.stepsContainer}>
+              <View style={styles.step}>
+                <View style={[
+                  styles.stepIcon, 
+                  { 
+                    backgroundColor: '#7B68EE',
+                    shadowColor: '#7B68EE',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 10,
+                    elevation: 6,
+                  }
+                ]}>
                   <Ionicons name="bulb" size={32} color="#ffffff" />
                 </View>
-                <Text style={[styles.stepLabel, styles.stepLabelActive]}>Idea</Text>
+                <Text style={styles.stepLabel}>Share</Text>
               </View>
-
-              {/* Analysis Step - Inactive */}
               <View style={styles.step}>
-                <View style={styles.stepIcon}>
+                <View style={[
+                  styles.stepIcon, 
+                  { 
+                    backgroundColor: '#7B68EE',
+                    shadowColor: '#7B68EE',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 10,
+                    elevation: 6,
+                  }
+                ]}>
                   <Ionicons name="analytics" size={32} color="#ffffff" />
                 </View>
-                <Text style={styles.stepLabel}>Analysis</Text>
+                <Text style={styles.stepLabel}>Analyze</Text>
               </View>
-
-              {/* Launch Step - Inactive */}
               <View style={styles.step}>
-                <View style={styles.stepIcon}>
+                <View style={[
+                  styles.stepIcon, 
+                  { 
+                    backgroundColor: '#7B68EE',
+                    shadowColor: '#7B68EE',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 10,
+                    elevation: 6,
+                  }
+                ]}>
                   <Ionicons name="rocket" size={32} color="#ffffff" />
                 </View>
                 <Text style={styles.stepLabel}>Launch</Text>
@@ -318,210 +352,160 @@ export default function HomeScreen({ navigation }) {
             </View>
           </Animatable.View>
 
-          {/* Form Container */}
-          <Animatable.View animation="fadeInUp" duration={800} delay={400}>
+          {/* Form */}
+          <Animatable.View animation="fadeInUp" duration={800} delay={600}>
             <View style={styles.formContainer}>
-              <Text style={[styles.formTitle, { color: isDarkMode ? colors.text : '#111827' }]}>Share Your Idea</Text>
-              <Text style={[styles.formSubtitle, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
-                Tell us about your product vision and we'll provide comprehensive AI analysis to help bring it to life.
+              <Text style={[styles.formTitle, { color: isDarkMode ? colors.text : '#000000' }]}>Share Your Idea</Text>
+              <Text style={[styles.formSubtitle, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
+                Tell us about your product idea and get AI-powered insights in seconds
               </Text>
-              
-              <View style={styles.form}>
-                {/* Input Header */}
-                <View style={styles.inputHeader}>
-                  <View style={styles.inputHeaderLeft}>
-                    <Text style={[styles.inputLabel, { color: isDarkMode ? colors.text : '#111827' }]}>
-                      Your Product Idea
-                    </Text>
-                    <TouchableOpacity 
-                      style={styles.tipsButton}
-                      onPress={() => setShowWritingTips(!showWritingTips)}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="help-circle-outline" size={16} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
-                      <Text style={[styles.tipsButtonText, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
-                        Writing tips
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                  <View style={styles.inputHeaderRight}>
-                    <Text style={[
-                      styles.characterCount, 
-                      { 
-                        color: isIdeaTooLong() ? '#ef4444' : 
-                               hasGoodLength() ? '#22c55e' : 
-                               isDarkMode ? colors.textSecondary : '#6b7280'
-                      }
-                    ]}>
-                      {getCharacterCount()}/1000
-                    </Text>
-                  </View>
-                </View>
 
-                {/* Writing Tips (collapsible) */}
-                {showWritingTips && (
-                  <Animatable.View 
-                    animation="fadeInDown" 
-                    duration={300}
-                    style={[styles.writingTips, { backgroundColor: isDarkMode ? colors.surface : '#f8fafc', borderColor: isDarkMode ? colors.border : '#e2e8f0' }]}
-                  >
-                    <Text style={[styles.writingTipsTitle, { color: isDarkMode ? colors.text : '#111827' }]}>
-                      ✨ How to write a great idea description:
+              {/* Text Input */}
+              <TextInput
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: isDarkMode ? colors.input : '#FFFFFF',
+                    borderColor: validation.type === 'error' ? '#7B68EE' :
+                      validation.type === 'success' ? '#7B68EE' :
+                      validation.type === 'warning' ? '#7B68EE' :
+                      isDarkMode ? colors.border : '#D3D3D3',
+                    color: isDarkMode ? colors.text : '#000000',
+                    shadowColor: '#7B68EE',
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: 0.12,
+                    shadowRadius: 8,
+                    elevation: 5,
+                  }
+                ]}
+                placeholder="Describe your product idea in detail. What problem does it solve? How does it work? Who is your target audience?"
+                placeholderTextColor={isDarkMode ? colors.placeholder : '#999999'}
+                value={idea}
+                onChangeText={setIdea}
+                multiline
+                numberOfLines={8}
+                textAlignVertical="top"
+                editable={!isAnalyzing}
+              />
+
+              {/* Analyze Button */}
+              <TouchableOpacity
+                style={[
+                  styles.analyzeButton,
+                  {
+                    backgroundColor: validation.type === 'success' ? '#7B68EE' :
+                      isIdeaTooLong() ? '#D3D3D3' :
+                      isAnalyzing ? '#7B68EE' : '#7B68EE',
+                    opacity: isButtonDisabled ? 0.6 : 1,
+                    shadowColor: '#7B68EE',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 12,
+                    elevation: 8,
+                  }
+                ]}
+                onPress={handleAnalyze}
+                disabled={isButtonDisabled}
+                activeOpacity={0.8}
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Ionicons name="hourglass" size={20} color="#ffffff" />
+                    <Text style={styles.analyzeButtonText}>Starting Analysis...</Text>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons name="sparkles" size={20} color="#ffffff" />
+                    <Text style={styles.analyzeButtonText}>
+                      {validation.type === 'error' ? 'Too Long - Shorten First' : 'Analyze My Idea'}
                     </Text>
-                    <View style={styles.tipsList}>
-                      <Text style={[styles.tipItem, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
-                        • <Text style={styles.tipBold}>Problem:</Text> What issue does it solve?
-                      </Text>
-                      <Text style={[styles.tipItem, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
-                        • <Text style={styles.tipBold}>Solution:</Text> How does your idea solve it?
-                      </Text>
-                      <Text style={[styles.tipItem, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
-                        • <Text style={styles.tipBold}>Target:</Text> Who is this for?
-                      </Text>
-                      <Text style={[styles.tipItem, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
-                        • <Text style={styles.tipBold}>Unique:</Text> What makes it different?
-                      </Text>
-                    </View>
-                  </Animatable.View>
+                  </>
                 )}
+              </TouchableOpacity>
+            </View>
+          </Animatable.View>
 
-                {/* Text Input */}
-                <TextInput
-                  style={[
-                    styles.ideaTextarea, 
-                    { 
-                      backgroundColor: isDarkMode ? colors.input : '#ffffff',
-                      borderColor: validation.type === 'error' ? '#ef4444' : 
-                                   validation.type === 'success' ? '#22c55e' :
-                                   validation.type === 'warning' ? '#f59e0b' :
-                                   isDarkMode ? colors.border : '#d1d5db',
-                      color: isDarkMode ? colors.text : '#333333',
-                      borderWidth: 2,
-                    }
-                  ]}
-                  value={idea}
-                  onChangeText={setIdea}
-                  placeholder="Describe your product idea in detail... What problem does it solve? Who is it for? What makes it unique?"
-                  placeholderTextColor={isDarkMode ? colors.placeholder : '#9ca3af'}
-                  multiline
-                  textAlignVertical="top"
-                  maxLength={1000}
-                />
-
-                {/* Input Validation Message */}
-                <View style={styles.validationContainer}>
-                  <View style={styles.validationLeft}>
-                    <Ionicons 
-                      name={
-                        validation.type === 'success' ? 'checkmark-circle' :
-                        validation.type === 'error' ? 'close-circle' :
-                        validation.type === 'warning' ? 'warning' :
-                        'information-circle'
-                      } 
-                      size={16} 
-                      color={
-                        validation.type === 'success' ? '#22c55e' :
-                        validation.type === 'error' ? '#ef4444' :
-                        validation.type === 'warning' ? '#f59e0b' :
-                        isDarkMode ? colors.textSecondary : '#6b7280'
-                      } 
-                    />
-                    <Text style={[
-                      styles.validationMessage,
-                      { 
-                        color: validation.type === 'success' ? '#22c55e' :
-                               validation.type === 'error' ? '#ef4444' :
-                               validation.type === 'warning' ? '#f59e0b' :
-                               isDarkMode ? colors.textSecondary : '#6b7280'
-                      }
-                    ]}>
-                      {validation.message}
-                    </Text>
-                  </View>
-                  {idea.trim().length > 0 && (
-                    <Text style={[styles.wordCount, { color: isDarkMode ? colors.textSecondary : '#9ca3af' }]}>
-                      {getWordCount()} words
-                    </Text>
-                  )}
-                </View>
-
-                {/* Enhanced Analyze Button */}
-                <TouchableOpacity
-                  style={[
-                    styles.analyzeButton,
-                    {
-                      opacity: isButtonDisabled ? 0.6 : 1,
-                      backgroundColor: validation.type === 'success' ? '#22c55e' :
-                                       isIdeaTooLong() ? '#ef4444' : 
-                                       isAnalyzing ? '#f59e0b' : '#f87171'
-                    }
-                  ]}
-                  onPress={handleAnalyze}
-                  disabled={isButtonDisabled}
-                  activeOpacity={isButtonDisabled ? 1 : 0.8}
-                >
-                  {isAnalyzing ? (
-                    <>
-                      <Ionicons name="hourglass" size={20} color="#ffffff" />
-                      <Text style={styles.analyzeButtonText}>Starting Analysis...</Text>
-                    </>
-                  ) : (
-                    <>
-                      <Ionicons name="sparkles" size={20} color="#ffffff" />
-                      <Text style={styles.analyzeButtonText}>
-                        {validation.type === 'success' ? 'Analyze My Idea ✨' : 
-                         isIdeaTooLong() ? 'Too Long - Shorten First' :
-                         'Analyze My Idea'}
-                      </Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
-
-              {/* Example Ideas */}
-              <View style={styles.examplesContainer}>
-                <Text style={[styles.examplesTitle, { color: isDarkMode ? colors.text : '#111827' }]}>💡 Need inspiration?</Text>
-                <View style={styles.examplesList}>
-                  {exampleIdeas.slice(0, 3).map((example, index) => (
-                    <TouchableOpacity 
+          {/* Examples */}
+          <Animatable.View animation="fadeInUp" duration={800} delay={800}>
+            <View style={styles.examplesContainer}>
+              <Text style={[styles.examplesTitle, { color: isDarkMode ? colors.text : '#000000' }]}>💡 Need inspiration?</Text>
+              
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.examplesScroll}>
+                {exampleIdeas.map((example, index) => {
+                  // Create different gradient styles for each card
+                  const gradientStyles = [
+                    { backgroundColor: 'linear-gradient(135deg, #7B68EE15 0%, #FFFFFF 100%)', borderColor: '#7B68EE30' },
+                    { backgroundColor: 'linear-gradient(135deg, #9B59B615 0%, #FFFFFF 100%)', borderColor: '#9B59B630' },
+                    { backgroundColor: 'linear-gradient(135deg, #6A5ACD15 0%, #FFFFFF 100%)', borderColor: '#6A5ACD30' },
+                    { backgroundColor: 'linear-gradient(135deg, #8A70D315 0%, #FFFFFF 100%)', borderColor: '#8A70D330' },
+                    { backgroundColor: 'linear-gradient(135deg, #7B68EE20 0%, #FFFFFF 100%)', borderColor: '#7B68EE40' },
+                    { backgroundColor: 'linear-gradient(135deg, #6B5B9515 0%, #FFFFFF 100%)', borderColor: '#6B5B9530' }
+                  ];
+                  
+                  // Fallback solid colors for React Native compatibility
+                  const cardColors = [
+                    { backgroundColor: '#7B68EE08', borderColor: '#7B68EE25', shadowColor: '#7B68EE' },
+                    { backgroundColor: '#9B59B608', borderColor: '#9B59B625', shadowColor: '#9B59B6' },
+                    { backgroundColor: '#6A5ACD08', borderColor: '#6A5ACD25', shadowColor: '#6A5ACD' },
+                    { backgroundColor: '#8A70D308', borderColor: '#8A70D325', shadowColor: '#8A70D3' },
+                    { backgroundColor: '#7B68EE12', borderColor: '#7B68EE30', shadowColor: '#7B68EE' },
+                    { backgroundColor: '#6B5B9508', borderColor: '#6B5B9525', shadowColor: '#6B5B95' }
+                  ];
+                  
+                  const cardStyle = cardColors[index % cardColors.length];
+                  
+                  return (
+                    <TouchableOpacity
                       key={index}
-                      style={[styles.exampleChip, { backgroundColor: isDarkMode ? colors.surface : '#f3f4f6' }]}
+                      style={[
+                        styles.exampleChip, 
+                        { 
+                          backgroundColor: isDarkMode ? colors.surface : cardStyle.backgroundColor,
+                          borderColor: isDarkMode ? colors.border : cardStyle.borderColor,
+                          borderWidth: 1.5,
+                          shadowColor: cardStyle.shadowColor,
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.15,
+                          shadowRadius: 4,
+                          elevation: 3,
+                        }
+                      ]}
                       onPress={() => setIdea(example.text)}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.exampleCategory, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                      <Text style={[styles.exampleCategory, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                         {example.category}
                       </Text>
-                      <Text style={[styles.exampleText, { color: isDarkMode ? colors.text : '#374151' }]}>
+                      <Text style={[styles.exampleText, { color: isDarkMode ? colors.text : '#000000' }]}>
                         {example.short}
                       </Text>
                     </TouchableOpacity>
-                  ))}
-                  
-                  {/* Random Example Button */}
-                  <TouchableOpacity 
-                    style={[styles.randomExampleChip, { borderColor: isDarkMode ? colors.border : '#d1d5db' }]}
-                    onPress={() => {
-                      const randomExample = getRandomExample();
-                      setIdea(randomExample.text);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="shuffle" size={16} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
-                    <Text style={[styles.randomExampleText, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                  );
+                })}
+                <TouchableOpacity
+                  style={[styles.randomExampleChip, { borderColor: isDarkMode ? colors.border : '#D3D3D3' }]}
+                  onPress={() => {
+                    const randomExample = getRandomExample();
+                    setIdea(randomExample.text);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.randomExampleContent}>
+                    <Ionicons name="shuffle" size={16} color={isDarkMode ? colors.textSecondary : '#666666'} />
+                    <Text style={[styles.randomExampleText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                       Random idea
                     </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+                  </View>
+                </TouchableOpacity>
+              </ScrollView>
             </View>
           </Animatable.View>
         </View>
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
-            Powered by OpenAI • Made with <Text style={styles.heart}>❤️</Text> for Product Innovators
+          <Text style={[styles.footerText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
+            Made with ❤️ for Product Innovators
           </Text>
         </View>
       </ScrollView>
@@ -557,7 +541,6 @@ const styles = StyleSheet.create({
   logo: {
     width: 48,
     height: 48,
-    backgroundColor: '#ef4444',
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
@@ -570,6 +553,7 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     flexDirection: 'column',
+    flex: 1,
   },
   title: {
     fontSize: 24, // 1.5rem
@@ -600,7 +584,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24, // 1.5rem
     paddingVertical: 48, // 3rem
   },
-  progressSteps: {
+  stepsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -612,27 +596,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12, // 0.75rem
   },
-  stepActive: {
-    // Active step styling
-  },
   stepIcon: {
     width: 64,
     height: 64,
-    backgroundColor: '#9ca3af',
     borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  stepIconActive: {
-    backgroundColor: '#ef4444',
-  },
   stepLabel: {
     fontWeight: '500',
-    color: '#9ca3af',
+    color: '#666666',
     fontFamily: 'System',
-  },
-  stepLabelActive: {
-    color: '#111827',
   },
   formContainer: {
     maxWidth: 512, // 32rem
@@ -653,83 +627,31 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
     lineHeight: 24,
   },
-  form: {
-    flexDirection: 'column',
-    gap: 24, // 1.5rem
-  },
-  inputHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  inputHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  inputLabel: {
-    fontSize: 18,
-    fontWeight: '600',
+  textInput: {
+    minHeight: 160,
+    padding: 16,
+    fontSize: 16,
+    borderWidth: 2,
+    borderRadius: 12,
     fontFamily: 'System',
-  },
-  tipsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  tipsButtonText: {
-    fontSize: 14,
-    fontWeight: '400',
-    fontFamily: 'System',
-  },
-  inputHeaderRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  characterCount: {
-    fontSize: 14,
-    fontWeight: '500',
-    fontFamily: 'System',
-  },
-  validationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-    paddingHorizontal: 4,
-  },
-  validationLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flex: 1,
-  },
-  validationMessage: {
-    fontSize: 14,
-    fontWeight: '500',
-    fontFamily: 'System',
-  },
-  wordCount: {
-    fontSize: 12,
-    fontWeight: '400',
-    fontFamily: 'System',
+    lineHeight: 24,
+    textAlignVertical: 'top',
+    marginBottom: 12,
   },
   analyzeButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8, // 0.5rem
-    borderRadius: 12, // 0.75rem
-    paddingVertical: 16, // 1rem
-    paddingHorizontal: 16, // 1rem
+    paddingVertical: 18, // 1rem
+    paddingHorizontal: 32, // 2rem
+    borderRadius: 16, // 0.75rem
+    marginTop: 8,
   },
   analyzeButtonText: {
     color: '#ffffff',
     fontSize: 18, // 1.125rem
-    fontWeight: '500',
+    fontWeight: '700',
     fontFamily: 'System',
   },
   examplesContainer: {
@@ -742,25 +664,20 @@ const styles = StyleSheet.create({
     marginBottom: 16, // 1rem
     fontFamily: 'System',
   },
-  examplesList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 12,
+  examplesScroll: {
+    padding: 12,
   },
   exampleChip: {
-    padding: 16,
-    marginRight: 12,
+    padding: 18,
+    marginRight: 14,
     marginBottom: 12,
-    borderRadius: 16,
+    borderRadius: 18,
     flexDirection: 'column',
     alignItems: 'flex-start',
     minWidth: 180,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    maxWidth: 200,
+    minHeight: 80,
+    justifyContent: 'center',
   },
   exampleCategory: {
     fontSize: 12,
@@ -768,12 +685,14 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
     marginBottom: 6,
     opacity: 0.8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   exampleText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
     fontFamily: 'System',
-    lineHeight: 18,
+    lineHeight: 20,
   },
   randomExampleChip: {
     flexDirection: 'row',
@@ -785,6 +704,11 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderRadius: 16,
     minWidth: 120,
+  },
+  randomExampleContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   randomExampleText: {
     fontSize: 14,
@@ -866,15 +790,13 @@ const styles = StyleSheet.create({
   infoCard: {
     padding: 16,
     borderWidth: 2,
-    borderColor: '#f59e0b',
     borderRadius: 12,
     marginBottom: 16,
   },
-  infoHeader: {
+  infoCardContent: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 8,
   },
   infoTitle: {
     fontSize: 18,
@@ -898,40 +820,5 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontWeight: '700',
-  },
-  writingTips: {
-    padding: 16,
-    borderWidth: 1,
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  writingTipsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'System',
-    marginBottom: 12,
-  },
-  tipsList: {
-    gap: 8,
-  },
-  tipItem: {
-    fontSize: 14,
-    fontWeight: '400',
-    fontFamily: 'System',
-    lineHeight: 20,
-  },
-  tipBold: {
-    fontWeight: '600',
-  },
-  ideaTextarea: {
-    minHeight: 160,
-    padding: 16,
-    fontSize: 16,
-    borderWidth: 2,
-    borderRadius: 12,
-    fontFamily: 'System',
-    lineHeight: 24,
-    textAlignVertical: 'top',
-    marginBottom: 12,
   },
 });

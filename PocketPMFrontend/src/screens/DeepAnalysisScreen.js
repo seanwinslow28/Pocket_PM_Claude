@@ -58,8 +58,7 @@ export default function DeepAnalysisScreen({ navigation, route }) {
     market: {
       name: 'Market Analysis',
       icon: 'trending-up',
-      color: '#3b82f6',
-      emoji: '📊',
+      color: '#7B68EE',
       statusMessages: [
         'Analyzing market size...',
         'Identifying target audience...',
@@ -71,8 +70,7 @@ export default function DeepAnalysisScreen({ navigation, route }) {
     technical: {
       name: 'Technical Feasibility',
       icon: 'construct',
-      color: '#8b5cf6',
-      emoji: '⚙️',
+      color: '#7B68EE',
       statusMessages: [
         'Evaluating technical requirements...',
         'Analyzing development complexity...',
@@ -84,8 +82,7 @@ export default function DeepAnalysisScreen({ navigation, route }) {
     business: {
       name: 'Business Model',
       icon: 'calculator',
-      color: '#10b981',
-      emoji: '💰',
+      color: '#7B68EE',
       statusMessages: [
         'Analyzing revenue streams...',
         'Calculating cost structure...',
@@ -97,8 +94,7 @@ export default function DeepAnalysisScreen({ navigation, route }) {
     competitive: {
       name: 'Competitive Analysis',
       icon: 'people',
-      color: '#f59e0b',
-      emoji: '🏆',
+      color: '#7B68EE',
       statusMessages: [
         'Identifying key competitors...',
         'Analyzing market positioning...',
@@ -400,15 +396,26 @@ export default function DeepAnalysisScreen({ navigation, route }) {
     console.log('Progress:', progress);
     console.log('Current config:', currentConfig);
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#f8f9fa' }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#FFFFFF' }]}>
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: isDarkMode ? colors.surface : '#ffffff', borderBottomColor: isDarkMode ? colors.border : '#e5e7eb' }]}>
+        <View style={[
+          styles.header, 
+          { 
+            backgroundColor: isDarkMode ? colors.surface : '#FFFFFF', 
+            borderBottomColor: isDarkMode ? colors.border : '#D3D3D3',
+            shadowColor: '#7B68EE',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 6,
+            elevation: 4,
+          }
+        ]}>
           <View style={styles.headerLeft}>
             <TouchableOpacity onPress={handleBackToResults} style={styles.backButton} activeOpacity={0.7}>
-              <Ionicons name="arrow-back" size={24} color={isDarkMode ? colors.text : '#111827'} />
+              <Ionicons name="arrow-back" size={24} color={isDarkMode ? colors.text : '#000000'} />
             </TouchableOpacity>
             <View style={styles.logoContainer}>
-              <View style={[styles.logo, { backgroundColor: currentConfig.color }]}>
+              <View style={[styles.logo, { backgroundColor: '#7B68EE' }]}>
                 <Ionicons name={currentConfig.icon} size={24} color="#ffffff" />
                 <View style={styles.sparkles}>
                   <Ionicons name="sparkles" size={12} color="#ffffff" />
@@ -416,8 +423,8 @@ export default function DeepAnalysisScreen({ navigation, route }) {
               </View>
             </View>
             <View style={styles.titleContainer}>
-              <Text style={[styles.title, { color: isDarkMode ? colors.text : '#111827' }]}>{currentConfig.name}</Text>
-              <Text style={[styles.subtitle, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+              <Text style={[styles.title, { color: isDarkMode ? colors.text : '#000000' }]}>{currentConfig.name}</Text>
+              <Text style={[styles.subtitle, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                 Deep dive analysis in progress
               </Text>
             </View>
@@ -431,18 +438,40 @@ export default function DeepAnalysisScreen({ navigation, route }) {
             <View style={styles.progressSteps}>
               {/* Idea Step - Completed */}
               <View style={styles.step}>
-                <View style={[styles.stepIcon, styles.stepIconCompleted]}>
+                <View style={[
+                  styles.stepIcon, 
+                  styles.stepIconCompleted,
+                  {
+                    backgroundColor: '#7B68EE',
+                    shadowColor: '#7B68EE',
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 15,
+                    elevation: 12,
+                  }
+                ]}>
                   <Ionicons name="checkmark" size={32} color="#ffffff" />
                 </View>
-                <Text style={[styles.stepLabel, styles.stepLabelCompleted]}>Idea</Text>
+                <Text style={[styles.stepLabel, styles.stepLabelCompleted, { color: '#7B68EE' }]}>Idea</Text>
               </View>
 
               {/* Analysis Step - Active */}
               <View style={[styles.step, styles.stepActive]}>
-                <View style={[styles.stepIcon, styles.stepIconActive, { backgroundColor: currentConfig.color }]}>
+                <View style={[
+                  styles.stepIcon, 
+                  styles.stepIconActive, 
+                  { 
+                    backgroundColor: '#7B68EE',
+                    shadowColor: '#7B68EE',
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 15,
+                    elevation: 12,
+                  }
+                ]}>
                   <Ionicons name={currentConfig.icon} size={32} color="#ffffff" ref={iconRef} />
                 </View>
-                <Text style={[styles.stepLabel, styles.stepLabelActive, { color: currentConfig.color }]}>{currentConfig.name}</Text>
+                <Text style={[styles.stepLabel, styles.stepLabelActive, { color: '#7B68EE' }]}>{currentConfig.name}</Text>
               </View>
 
               {/* Launch Step - Pending */}
@@ -457,16 +486,26 @@ export default function DeepAnalysisScreen({ navigation, route }) {
 
           {/* Progress Card */}
           <Animatable.View animation="fadeInUp" duration={800} delay={400}>
-            <View style={[styles.progressCard, { backgroundColor: isDarkMode ? colors.surface : '#ffffff' }]}>
+            <View style={[
+              styles.progressCard, 
+              { 
+                backgroundColor: isDarkMode ? colors.surface : '#FFFFFF',
+                shadowColor: '#7B68EE',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+                elevation: 8,
+              }
+            ]}>
               <View style={styles.progressHeader}>
-                <View style={[styles.progressIcon, { backgroundColor: currentConfig.color + '15' }]}>
-                  <Text style={[styles.progressEmoji, { fontSize: 32 }]}>{currentConfig.emoji}</Text>
+                <View style={[styles.progressIcon, { backgroundColor: '#7B68EE15' }]}>
+                  <Ionicons name={currentConfig.icon} size={32} color="#7B68EE" />
                 </View>
                 <View style={styles.progressInfo}>
-                  <Text style={[styles.progressTitle, { color: isDarkMode ? colors.text : '#111827' }]}>
+                  <Text style={[styles.progressTitle, { color: isDarkMode ? colors.text : '#000000' }]}>
                     Analyzing Your Idea
                   </Text>
-                  <Text style={[styles.progressSubtitle, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                  <Text style={[styles.progressSubtitle, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                     {statusText || 'Preparing analysis...'}
                   </Text>
                 </View>
@@ -474,18 +513,18 @@ export default function DeepAnalysisScreen({ navigation, route }) {
 
               {/* Progress Bar */}
               <View style={styles.progressBarContainer}>
-                <View style={[styles.progressBar, { backgroundColor: isDarkMode ? colors.border : '#e5e7eb' }]}>
+                <View style={[styles.progressBar, { backgroundColor: isDarkMode ? colors.border : '#D3D3D3' }]}>
                   <View 
                     style={[
                       styles.progressBarFill, 
                       { 
                         width: `${progress}%`,
-                        backgroundColor: currentConfig.color
+                        backgroundColor: '#7B68EE'
                       }
                     ]} 
                   />
                 </View>
-                <Text style={[styles.progressPercentage, { color: currentConfig.color }]}>
+                <Text style={[styles.progressPercentage, { color: '#7B68EE' }]}>
                   {progress}%
                 </Text>
               </View>
@@ -494,8 +533,18 @@ export default function DeepAnalysisScreen({ navigation, route }) {
 
           {/* Analysis Preview */}
           <Animatable.View animation="fadeInUp" duration={800} delay={600}>
-            <View style={[styles.previewCard, { backgroundColor: isDarkMode ? colors.surface : '#ffffff' }]}>
-              <Text style={[styles.previewTitle, { color: isDarkMode ? colors.text : '#111827' }]}>
+            <View style={[
+              styles.previewCard, 
+              { 
+                backgroundColor: isDarkMode ? colors.surface : '#FFFFFF',
+                shadowColor: '#7B68EE',
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.12,
+                shadowRadius: 8,
+                elevation: 5,
+              }
+            ]}>
+              <Text style={[styles.previewTitle, { color: isDarkMode ? colors.text : '#000000' }]}>
                 What We're Analyzing
               </Text>
               <View style={styles.previewItems}>
@@ -505,16 +554,16 @@ export default function DeepAnalysisScreen({ navigation, route }) {
                       styles.previewDot, 
                       { 
                         backgroundColor: index <= Math.floor((progress / 100) * currentConfig.statusMessages.length) 
-                          ? currentConfig.color 
-                          : isDarkMode ? colors.border : '#e5e7eb'
+                          ? '#7B68EE' 
+                          : isDarkMode ? colors.border : '#D3D3D3'
                       }
                     ]} />
                     <Text style={[
                       styles.previewText, 
                       { 
                         color: index <= Math.floor((progress / 100) * currentConfig.statusMessages.length) 
-                          ? (isDarkMode ? colors.text : '#111827')
-                          : (isDarkMode ? colors.textSecondary : '#6b7280')
+                          ? (isDarkMode ? colors.text : '#000000')
+                          : (isDarkMode ? colors.textSecondary : '#666666')
                       }
                     ]}>
                       {message}
@@ -533,10 +582,21 @@ export default function DeepAnalysisScreen({ navigation, route }) {
   if (isTabAccess) {
     console.log('=== Rendering tab access screen ===');
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#f8f9fa' }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#FFFFFF' }]}>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Header */}
-          <View style={[styles.header, { backgroundColor: isDarkMode ? colors.surface : '#ffffff', borderBottomColor: isDarkMode ? colors.border : '#e5e7eb' }]}>
+          <View style={[
+            styles.header, 
+            { 
+              backgroundColor: isDarkMode ? colors.surface : '#FFFFFF', 
+              borderBottomColor: isDarkMode ? colors.border : '#D3D3D3',
+              shadowColor: '#7B68EE',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 6,
+              elevation: 4,
+            }
+          ]}>
             <View style={styles.headerLeft}>
               <View style={styles.logoContainer}>
                 <View style={styles.logo}>
@@ -547,8 +607,8 @@ export default function DeepAnalysisScreen({ navigation, route }) {
                 </View>
               </View>
               <View style={styles.titleContainer}>
-                <Text style={[styles.title, { color: isDarkMode ? colors.text : '#111827' }]}>Deep Analysis</Text>
-                <Text style={[styles.subtitle, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                <Text style={[styles.title, { color: isDarkMode ? colors.text : '#000000' }]}>Deep Analysis</Text>
+                <Text style={[styles.subtitle, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                   Advanced AI-powered insights
                 </Text>
               </View>
@@ -558,16 +618,26 @@ export default function DeepAnalysisScreen({ navigation, route }) {
           {/* Main Content */}
           <View style={styles.mainContent}>
             {/* Detailed Analysis Section */}
-            <View style={[styles.featureSection, { backgroundColor: isDarkMode ? colors.surface : '#ffffff' }]}>
+            <View style={[
+              styles.featureSection, 
+              { 
+                backgroundColor: isDarkMode ? colors.surface : '#ffffff',
+                shadowColor: '#7B68EE',
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.12,
+                shadowRadius: 8,
+                elevation: 5,
+              }
+            ]}>
               <View style={styles.featureHeader}>
-                <View style={[styles.featureIcon, { backgroundColor: '#ef444415' }]}>
-                  <Ionicons name="document-text" size={24} color="#ef4444" />
+                <View style={[styles.featureIcon, { backgroundColor: '#7B68EE15' }]}>
+                  <Ionicons name="document-text" size={24} color="#7B68EE" />
                 </View>
                 <View style={styles.featureHeaderText}>
-                  <Text style={[styles.featureTitle, { color: isDarkMode ? colors.text : '#111827' }]}>
-                    📋 Detailed Analysis
+                  <Text style={[styles.featureTitle, { color: isDarkMode ? colors.text : '#000000' }]}>
+                    Detailed Analysis
                   </Text>
-                  <Text style={[styles.featureSubtitle, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                  <Text style={[styles.featureSubtitle, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                     {latestAnalysis ? 'View your complete analysis report' : 'Analyze an idea to see detailed insights'}
                   </Text>
                 </View>
@@ -575,8 +645,13 @@ export default function DeepAnalysisScreen({ navigation, route }) {
 
               <TouchableOpacity 
                 style={[styles.analysisToggleHeader, { 
-                  backgroundColor: isDarkMode ? colors.background : '#f8fafc',
-                  borderColor: isDarkMode ? colors.border : '#e5e7eb'
+                  backgroundColor: isDarkMode ? colors.background : '#FFFFFF',
+                  borderColor: isDarkMode ? colors.border : '#D3D3D3',
+                  shadowColor: '#7B68EE',
+                  shadowOffset: { width: 0, height: 3 },
+                  shadowOpacity: 0.12,
+                  shadowRadius: 8,
+                  elevation: 5,
                 }]}
                 onPress={() => {
                   console.log('=== Analysis Toggle Pressed ===');
@@ -591,10 +666,10 @@ export default function DeepAnalysisScreen({ navigation, route }) {
                   <Ionicons 
                     name="document-text" 
                     size={20} 
-                    color="#ef4444"
+                    color="#7B68EE"
                   />
                   <Text style={[styles.analysisToggleTitle, { 
-                    color: isDarkMode ? colors.text : '#111827'
+                    color: isDarkMode ? colors.text : '#000000'
                   }]}>
                     {loadingAnalysis ? 'Loading Analysis...' : 'Full Analysis Report'}
                   </Text>
@@ -603,9 +678,9 @@ export default function DeepAnalysisScreen({ navigation, route }) {
                   <Ionicons 
                     name={showFullAnalysis ? "chevron-up" : "chevron-down"} 
                     size={20} 
-                    color={isDarkMode ? colors.textSecondary : '#6b7280'} 
+                    color={isDarkMode ? colors.textSecondary : '#666666'} 
                   />
-                  <Text style={[styles.toggleText, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                  <Text style={[styles.toggleText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                     {showFullAnalysis ? 'Hide' : 'Show'}
                   </Text>
                 </View>
@@ -614,14 +689,14 @@ export default function DeepAnalysisScreen({ navigation, route }) {
               {showFullAnalysis && (
                 <Animatable.View animation="fadeInDown" duration={300}>
                   <View style={[styles.analysisContentContainer, { 
-                    backgroundColor: isDarkMode ? colors.background : '#ffffff',
-                    borderColor: isDarkMode ? colors.border : '#e5e7eb'
+                    backgroundColor: isDarkMode ? colors.background : '#FFFFFF',
+                    borderColor: isDarkMode ? colors.border : '#D3D3D3'
                   }]}>
                     <ScrollView style={styles.analysisContent} nestedScrollEnabled showsVerticalScrollIndicator={false}>
                       {loadingAnalysis ? (
                         <View style={styles.analysisLoadingContainer}>
-                          <ActivityIndicator size="large" color="#ef4444" />
-                          <Text style={[styles.loadingText, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                          <ActivityIndicator size="large" color="#7B68EE" />
+                          <Text style={[styles.loadingText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                             Loading your analysis...
                           </Text>
                         </View>
@@ -630,10 +705,10 @@ export default function DeepAnalysisScreen({ navigation, route }) {
                       ) : (
                         <View style={styles.demoAnalysisContainer}>
                           <Ionicons name="bulb-outline" size={48} color={isDarkMode ? colors.textSecondary : '#9ca3af'} />
-                          <Text style={[styles.demoAnalysisTitle, { color: isDarkMode ? colors.text : '#111827' }]}>
+                          <Text style={[styles.demoAnalysisTitle, { color: isDarkMode ? colors.text : '#000000' }]}>
                             Demo Analysis Preview
                           </Text>
-                          <Text style={[styles.demoAnalysisText, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                          <Text style={[styles.demoAnalysisText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                             **Executive Summary**{'\n\n'}
                             Your idea shows strong potential in the growing digital wellness market. The habit-tracking app concept addresses a clear user need with proven market demand.{'\n\n'}
                             **Market Analysis**{'\n'}
@@ -650,7 +725,17 @@ export default function DeepAnalysisScreen({ navigation, route }) {
                             • Test monetization strategies
                           </Text>
                           <TouchableOpacity 
-                            style={[styles.demoAnalysisButton, { backgroundColor: '#ef4444' }]}
+                            style={[
+                              styles.demoAnalysisButton, 
+                              { 
+                                backgroundColor: '#7B68EE',
+                                shadowColor: '#7B68EE',
+                                shadowOffset: { width: 0, height: 4 },
+                                shadowOpacity: 0.3,
+                                shadowRadius: 12,
+                                elevation: 8,
+                              }
+                            ]}
                             onPress={() => navigation.navigate('HomeMain')}
                           >
                             <Text style={styles.demoAnalysisButtonText}>Analyze Your Real Idea</Text>
@@ -664,16 +749,26 @@ export default function DeepAnalysisScreen({ navigation, route }) {
             </View>
 
             {/* Deep Dive Analysis Section */}
-            <View style={[styles.featureSection, { backgroundColor: isDarkMode ? colors.surface : '#ffffff' }]}>
+            <View style={[
+              styles.featureSection, 
+              { 
+                backgroundColor: isDarkMode ? colors.surface : '#ffffff',
+                shadowColor: '#7B68EE',
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.12,
+                shadowRadius: 8,
+                elevation: 5,
+              }
+            ]}>
               <View style={styles.featureHeader}>
-                <View style={[styles.featureIcon, { backgroundColor: '#ef444415' }]}>
-                  <Ionicons name="layers" size={24} color="#ef4444" />
+                <View style={[styles.featureIcon, { backgroundColor: '#7B68EE15' }]}>
+                  <Ionicons name="layers" size={24} color="#7B68EE" />
                 </View>
                 <View style={styles.featureHeaderText}>
-                  <Text style={[styles.featureTitle, { color: isDarkMode ? colors.text : '#111827' }]}>
-                    🔍 Deep Dive Analysis
+                  <Text style={[styles.featureTitle, { color: isDarkMode ? colors.text : '#000000' }]}>
+                    Deep Dive Analysis
                   </Text>
-                  <Text style={[styles.featureSubtitle, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                  <Text style={[styles.featureSubtitle, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                     Get specialized insights for different aspects of your idea
                   </Text>
                 </View>
@@ -684,9 +779,14 @@ export default function DeepAnalysisScreen({ navigation, route }) {
                   style={({ pressed }) => [
                     styles.deepDiveCard, 
                     { 
-                      backgroundColor: isDarkMode ? colors.background : '#f8fafc',
-                      borderLeftColor: '#3b82f6',
-                      opacity: pressed ? 0.6 : 1
+                      backgroundColor: isDarkMode ? colors.background : '#FFFFFF',
+                      borderLeftColor: '#7B68EE',
+                      opacity: pressed ? 0.6 : 1,
+                      shadowColor: '#7B68EE',
+                      shadowOffset: { width: 0, height: 3 },
+                      shadowOpacity: 0.12,
+                      shadowRadius: 8,
+                      elevation: 5,
                     }
                   ]}
                   onPress={() => {
@@ -719,14 +819,14 @@ export default function DeepAnalysisScreen({ navigation, route }) {
                   }}
                   testID="market-analysis-button"
                 >
-                  <View style={[styles.deepDiveIcon, { backgroundColor: '#3b82f615' }]}>
-                    <Ionicons name="trending-up" size={20} color="#3b82f6" />
+                  <View style={[styles.deepDiveIcon, { backgroundColor: '#7B68EE15' }]}>
+                    <Ionicons name="trending-up" size={20} color="#7B68EE" />
                   </View>
                   <View style={styles.deepDiveCardContent}>
-                    <Text style={[styles.deepDiveCardName, { color: isDarkMode ? colors.text : '#111827' }]}>
+                    <Text style={[styles.deepDiveCardName, { color: isDarkMode ? colors.text : '#000000' }]}>
                       Market Analysis
                     </Text>
-                    <Text style={[styles.deepDiveCardDescription, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                    <Text style={[styles.deepDiveCardDescription, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                       Market size, target audience, and competitive landscape
                     </Text>
                   </View>
@@ -737,9 +837,14 @@ export default function DeepAnalysisScreen({ navigation, route }) {
                   style={({ pressed }) => [
                     styles.deepDiveCard, 
                     { 
-                      backgroundColor: isDarkMode ? colors.background : '#f8fafc',
-                      borderLeftColor: '#8b5cf6',
-                      opacity: pressed ? 0.6 : 1
+                      backgroundColor: isDarkMode ? colors.background : '#FFFFFF',
+                      borderLeftColor: '#7B68EE',
+                      opacity: pressed ? 0.6 : 1,
+                      shadowColor: '#7B68EE',
+                      shadowOffset: { width: 0, height: 3 },
+                      shadowOpacity: 0.12,
+                      shadowRadius: 8,
+                      elevation: 5,
                     }
                   ]}
                   onPress={() => {
@@ -764,14 +869,14 @@ export default function DeepAnalysisScreen({ navigation, route }) {
                   }}
                   testID="technical-analysis-button"
                 >
-                  <View style={[styles.deepDiveIcon, { backgroundColor: '#8b5cf615' }]}>
-                    <Ionicons name="construct" size={20} color="#8b5cf6" />
+                  <View style={[styles.deepDiveIcon, { backgroundColor: '#7B68EE15' }]}>
+                    <Ionicons name="construct" size={20} color="#7B68EE" />
                   </View>
                   <View style={styles.deepDiveCardContent}>
-                    <Text style={[styles.deepDiveCardName, { color: isDarkMode ? colors.text : '#111827' }]}>
+                    <Text style={[styles.deepDiveCardName, { color: isDarkMode ? colors.text : '#000000' }]}>
                       Technical
                     </Text>
-                    <Text style={[styles.deepDiveCardDescription, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                    <Text style={[styles.deepDiveCardDescription, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                       Technology requirements, development complexity, and resources
                     </Text>
                   </View>
@@ -782,9 +887,14 @@ export default function DeepAnalysisScreen({ navigation, route }) {
                   style={({ pressed }) => [
                     styles.deepDiveCard, 
                     { 
-                      backgroundColor: isDarkMode ? colors.background : '#f8fafc',
-                      borderLeftColor: '#10b981',
-                      opacity: pressed ? 0.6 : 1
+                      backgroundColor: isDarkMode ? colors.background : '#FFFFFF',
+                      borderLeftColor: '#7B68EE',
+                      opacity: pressed ? 0.6 : 1,
+                      shadowColor: '#7B68EE',
+                      shadowOffset: { width: 0, height: 3 },
+                      shadowOpacity: 0.12,
+                      shadowRadius: 8,
+                      elevation: 5,
                     }
                   ]}
                   onPress={() => {
@@ -809,14 +919,14 @@ export default function DeepAnalysisScreen({ navigation, route }) {
                   }}
                   testID="business-analysis-button"
                 >
-                  <View style={[styles.deepDiveIcon, { backgroundColor: '#10b98115' }]}>
-                    <Ionicons name="calculator" size={20} color="#10b981" />
+                  <View style={[styles.deepDiveIcon, { backgroundColor: '#7B68EE15' }]}>
+                    <Ionicons name="calculator" size={20} color="#7B68EE" />
                   </View>
                   <View style={styles.deepDiveCardContent}>
-                    <Text style={[styles.deepDiveCardName, { color: isDarkMode ? colors.text : '#111827' }]}>
+                    <Text style={[styles.deepDiveCardName, { color: isDarkMode ? colors.text : '#000000' }]}>
                       Business
                     </Text>
-                    <Text style={[styles.deepDiveCardDescription, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                    <Text style={[styles.deepDiveCardDescription, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                       Revenue streams, cost structure, and financial projections
                     </Text>
                   </View>
@@ -827,9 +937,14 @@ export default function DeepAnalysisScreen({ navigation, route }) {
                   style={({ pressed }) => [
                     styles.deepDiveCard, 
                     { 
-                      backgroundColor: isDarkMode ? colors.background : '#f8fafc',
-                      borderLeftColor: '#f59e0b',
-                      opacity: pressed ? 0.6 : 1
+                      backgroundColor: isDarkMode ? colors.background : '#FFFFFF',
+                      borderLeftColor: '#7B68EE',
+                      opacity: pressed ? 0.6 : 1,
+                      shadowColor: '#7B68EE',
+                      shadowOffset: { width: 0, height: 3 },
+                      shadowOpacity: 0.12,
+                      shadowRadius: 8,
+                      elevation: 5,
                     }
                   ]}
                   onPress={() => {
@@ -854,14 +969,14 @@ export default function DeepAnalysisScreen({ navigation, route }) {
                   }}
                   testID="competitive-analysis-button"
                 >
-                  <View style={[styles.deepDiveIcon, { backgroundColor: '#f59e0b15' }]}>
-                    <Ionicons name="people" size={20} color="#f59e0b" />
+                  <View style={[styles.deepDiveIcon, { backgroundColor: '#7B68EE15' }]}>
+                    <Ionicons name="people" size={20} color="#7B68EE" />
                   </View>
                   <View style={styles.deepDiveCardContent}>
-                    <Text style={[styles.deepDiveCardName, { color: isDarkMode ? colors.text : '#111827' }]}>
+                    <Text style={[styles.deepDiveCardName, { color: isDarkMode ? colors.text : '#000000' }]}>
                       Competitive
                     </Text>
-                    <Text style={[styles.deepDiveCardDescription, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                    <Text style={[styles.deepDiveCardDescription, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                       Competitor analysis, positioning, and differentiation strategy
                     </Text>
                   </View>
@@ -871,16 +986,26 @@ export default function DeepAnalysisScreen({ navigation, route }) {
             </View>
 
             {/* Smart Idea Scoring Section */}
-            <View style={[styles.featureSection, { backgroundColor: isDarkMode ? colors.surface : '#ffffff' }]}>
+            <View style={[
+              styles.featureSection, 
+              { 
+                backgroundColor: isDarkMode ? colors.surface : '#ffffff',
+                shadowColor: '#7B68EE',
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.12,
+                shadowRadius: 8,
+                elevation: 5,
+              }
+            ]}>
               <View style={styles.featureHeader}>
-                <View style={[styles.featureIcon, { backgroundColor: '#3b82f615' }]}>
-                  <Ionicons name="star" size={24} color="#3b82f6" />
+                <View style={[styles.featureIcon, { backgroundColor: '#7B68EE15' }]}>
+                  <Ionicons name="star" size={24} color="#7B68EE" />
                 </View>
                 <View style={styles.featureHeaderText}>
-                  <Text style={[styles.featureTitle, { color: isDarkMode ? colors.text : '#111827' }]}>
-                    🎯 Smart Idea Scoring
+                  <Text style={[styles.featureTitle, { color: isDarkMode ? colors.text : '#000000' }]}>
+                    Smart Idea Scoring
                   </Text>
-                  <Text style={[styles.featureSubtitle, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                  <Text style={[styles.featureSubtitle, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                     AI rates your ideas with detailed validation scores
                   </Text>
                 </View>
@@ -890,17 +1015,17 @@ export default function DeepAnalysisScreen({ navigation, route }) {
               <View style={styles.scoringMetrics}>
                 <View style={styles.metricRow}>
                   <View style={styles.metricItem}>
-                    <Text style={[styles.metricLabel, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                    <Text style={[styles.metricLabel, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                       Market Viability
                     </Text>
                     <View style={styles.scoreContainer}>
-                      <View style={[styles.scoreBar, { backgroundColor: isDarkMode ? colors.border : '#e5e7eb' }]}>
+                      <View style={[styles.scoreBar, { backgroundColor: isDarkMode ? colors.border : '#D3D3D3' }]}>
                         <View style={[styles.scoreProgress, { 
                           width: ideaScores ? `${(ideaScores.marketViability / 10) * 100}%` : '85%', 
-                          backgroundColor: '#22c55e' 
+                          backgroundColor: '#7B68EE'
                         }]} />
                       </View>
-                      <Text style={[styles.scoreValue, { color: '#22c55e' }]}>
+                      <Text style={[styles.scoreValue, { color: '#7B68EE' }]}>
                         {ideaScores ? `${ideaScores.marketViability}/10` : '8.5/10'}
                       </Text>
                     </View>
@@ -909,17 +1034,17 @@ export default function DeepAnalysisScreen({ navigation, route }) {
 
                 <View style={styles.metricRow}>
                   <View style={styles.metricItem}>
-                    <Text style={[styles.metricLabel, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                    <Text style={[styles.metricLabel, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                       Technical Feasibility
                     </Text>
                     <View style={styles.scoreContainer}>
-                      <View style={[styles.scoreBar, { backgroundColor: isDarkMode ? colors.border : '#e5e7eb' }]}>
+                      <View style={[styles.scoreBar, { backgroundColor: isDarkMode ? colors.border : '#D3D3D3' }]}>
                         <View style={[styles.scoreProgress, { 
                           width: ideaScores ? `${(ideaScores.technicalFeasibility / 10) * 100}%` : '70%', 
-                          backgroundColor: '#3b82f6' 
+                          backgroundColor: '#7B68EE'
                         }]} />
                       </View>
-                      <Text style={[styles.scoreValue, { color: '#3b82f6' }]}>
+                      <Text style={[styles.scoreValue, { color: '#7B68EE' }]}>
                         {ideaScores ? `${ideaScores.technicalFeasibility}/10` : '7.0/10'}
                       </Text>
                     </View>
@@ -928,17 +1053,17 @@ export default function DeepAnalysisScreen({ navigation, route }) {
 
                 <View style={styles.metricRow}>
                   <View style={styles.metricItem}>
-                    <Text style={[styles.metricLabel, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                    <Text style={[styles.metricLabel, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                       Market Potential
                     </Text>
                     <View style={styles.scoreContainer}>
-                      <View style={[styles.scoreBar, { backgroundColor: isDarkMode ? colors.border : '#e5e7eb' }]}>
+                      <View style={[styles.scoreBar, { backgroundColor: isDarkMode ? colors.border : '#D3D3D3' }]}>
                         <View style={[styles.scoreProgress, { 
                           width: ideaScores ? `${(ideaScores.marketPotential / 10) * 100}%` : '92%', 
-                          backgroundColor: '#f59e0b' 
+                          backgroundColor: '#7B68EE'
                         }]} />
                       </View>
-                      <Text style={[styles.scoreValue, { color: '#f59e0b' }]}>
+                      <Text style={[styles.scoreValue, { color: '#7B68EE' }]}>
                         {ideaScores ? `${ideaScores.marketPotential}/10` : '9.2/10'}
                       </Text>
                     </View>
@@ -947,59 +1072,68 @@ export default function DeepAnalysisScreen({ navigation, route }) {
               </View>
 
               {/* Validation Confidence */}
-              <View style={[styles.confidenceCard, { backgroundColor: isDarkMode ? colors.background : '#f8fafc' }]}>
+              <View style={[styles.confidenceCard, { backgroundColor: isDarkMode ? colors.background : '#FFFFFF' }]}>
                 <View style={styles.confidenceHeader}>
-                  <Ionicons name="shield-checkmark" size={20} color="#22c55e" />
-                  <Text style={[styles.confidenceTitle, { color: isDarkMode ? colors.text : '#111827' }]}>
+                  <Ionicons name="shield-checkmark" size={20} color="#7B68EE" />
+                  <Text style={[styles.confidenceTitle, { color: isDarkMode ? colors.text : '#000000' }]}>
                     Validation Confidence: {ideaScores ? `${ideaScores.confidence}%` : '84%'}
                   </Text>
                 </View>
-                <Text style={[styles.confidenceReason, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                <Text style={[styles.confidenceReason, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                   {ideaScores ? 
                     `Overall score: ${ideaScores.overall}/10. Analysis based on idea complexity, market indicators, and feasibility factors. ${ideaScores.overall >= 8 ? 'High potential for success!' : ideaScores.overall >= 6 ? 'Good potential with some considerations.' : 'Consider refining the concept.'}` :
-                    'High market demand, proven business model, moderate technical complexity. Similar products show 73% success rate in this category.'
-                  }
+                    'Analysis based on initial idea assessment, market factors, and technical feasibility. Strong indicators suggest good validation potential.'}
                 </Text>
               </View>
 
-              {/* Action Button */}
               <TouchableOpacity
-                style={[styles.featureButton, { 
-                  backgroundColor: scoringLoading ? '#9ca3af' : '#3b82f6',
-                  opacity: scoringLoading ? 0.7 : 1
-                }]}
-                onPress={() => {
-                  console.log('Score Your Idea button pressed');
-                  calculateIdeaScore();
-                }}
-                activeOpacity={0.8}
+                style={[
+                  styles.featureButton, 
+                  { 
+                    backgroundColor: '#7B68EE',
+                    shadowColor: '#7B68EE',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 12,
+                    elevation: 8,
+                  }
+                ]}
+                onPress={calculateIdeaScore}
                 disabled={scoringLoading}
+                activeOpacity={0.8}
               >
                 {scoringLoading ? (
-                  <>
-                    <Ionicons name="hourglass" size={20} color="#ffffff" />
-                    <Text style={styles.featureButtonText}>Calculating Scores...</Text>
-                  </>
+                  <ActivityIndicator color="#ffffff" />
                 ) : (
-                  <>
-                    <Ionicons name="bulb" size={20} color="#ffffff" />
-                    <Text style={styles.featureButtonText}>
-                      {ideaScores ? 'Recalculate Scores' : 'Score Your Idea'}
-                    </Text>
-                  </>
+                  <Ionicons name="calculator" size={20} color="#ffffff" />
                 )}
+                <Text style={styles.featureButtonText}>
+                  {scoringLoading ? 'Calculating...' : (ideaScores ? 'Recalculate Score' : 'Calculate Idea Score')}
+                </Text>
               </TouchableOpacity>
             </View>
 
             {/* Coming Soon Features */}
-            <View style={[styles.comingSoonCard, { backgroundColor: isDarkMode ? colors.surface : '#ffffff' }]}>
-              <Text style={[styles.comingSoonTitle, { color: isDarkMode ? colors.text : '#111827' }]}>
-                🚀 More Advanced Features Coming Soon
+            <View style={[
+              styles.comingSoonCard, 
+              { 
+                backgroundColor: isDarkMode ? colors.surface : '#ffffff',
+                shadowColor: '#7B68EE',
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.12,
+                shadowRadius: 8,
+                elevation: 5,
+              }
+            ]}>
+              <Text style={[styles.comingSoonTitle, { color: isDarkMode ? colors.text : '#000000' }]}>
+                More Advanced Features Coming Soon
               </Text>
-              <Text style={[styles.comingSoonText, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+              <Text style={[styles.comingSoonText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                 • Automated Market Research{'\n'}
                 • AI Product Advisor Chat{'\n'}
-                • Smart Action Plans
+                • Financial Projections{'\n'}
+                • Risk Assessment{'\n'}
+                • Go-to-Market Strategy
               </Text>
             </View>
           </View>
@@ -1014,19 +1148,30 @@ export default function DeepAnalysisScreen({ navigation, route }) {
   console.log('Deep analysis data:', deepAnalysis);
   
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#f8f9fa' }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#FFFFFF' }]}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: isDarkMode ? colors.surface : '#ffffff', borderBottomColor: isDarkMode ? colors.border : '#e5e7eb' }]}>
+        <View style={[
+          styles.header, 
+          { 
+            backgroundColor: isDarkMode ? colors.surface : '#FFFFFF', 
+            borderBottomColor: isDarkMode ? colors.border : '#D3D3D3',
+            shadowColor: '#7B68EE',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 6,
+            elevation: 4,
+          }
+        ]}>
           <View style={styles.headerLeft}>
             <TouchableOpacity onPress={handleBackToResults} style={styles.backButton} activeOpacity={0.7}>
-              <Ionicons name="arrow-back" size={24} color={isDarkMode ? colors.text : '#111827'} />
+              <Ionicons name="arrow-back" size={24} color={isDarkMode ? colors.text : '#000000'} />
             </TouchableOpacity>
             <View style={styles.logoContainer}>
-              <View style={[styles.logo, { backgroundColor: currentConfig.color }]}>
+              <View style={[styles.logo, { backgroundColor: '#7B68EE' }]}>
                 <Ionicons name={currentConfig.icon} size={24} color="#ffffff" />
                 <View style={styles.sparkles}>
                   <Ionicons name="sparkles" size={12} color="#ffffff" />
@@ -1034,18 +1179,18 @@ export default function DeepAnalysisScreen({ navigation, route }) {
               </View>
             </View>
             <View style={styles.titleContainer}>
-              <Text style={[styles.title, { color: isDarkMode ? colors.text : '#111827' }]}>{currentConfig.name}</Text>
-              <Text style={[styles.subtitle, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+              <Text style={[styles.title, { color: isDarkMode ? colors.text : '#000000' }]}>{currentConfig.name}</Text>
+              <Text style={[styles.subtitle, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                 Specialized insights for your idea
               </Text>
             </View>
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity style={styles.iconButton} onPress={handleShare} activeOpacity={0.7}>
-              <Ionicons name="share-outline" size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
+              <Ionicons name="share-outline" size={20} color={isDarkMode ? colors.textSecondary : '#666666'} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconButton} onPress={handleNewAnalysis} activeOpacity={0.7}>
-              <Ionicons name="add-outline" size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
+              <Ionicons name="add-outline" size={20} color={isDarkMode ? colors.textSecondary : '#666666'} />
             </TouchableOpacity>
           </View>
         </View>
@@ -1057,47 +1202,79 @@ export default function DeepAnalysisScreen({ navigation, route }) {
             <View style={styles.progressSteps}>
               {/* Idea Step - Completed */}
               <View style={styles.step}>
-                <View style={[styles.stepIcon, styles.stepIconCompleted]}>
+                <View style={[
+                  styles.stepIcon, 
+                  styles.stepIconCompleted,
+                  {
+                    backgroundColor: '#7B68EE',
+                    shadowColor: '#7B68EE',
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 15,
+                    elevation: 12,
+                  }
+                ]}>
                   <Ionicons name="checkmark" size={32} color="#ffffff" />
                 </View>
-                <Text style={[styles.stepLabel, styles.stepLabelCompleted]}>Idea</Text>
+                <Text style={[styles.stepLabel, styles.stepLabelCompleted, { color: '#7B68EE' }]}>Idea</Text>
               </View>
 
-              {/* Analysis Step - Completed */}
-              <View style={styles.step}>
-                <View style={[styles.stepIcon, styles.stepIconCompleted]}>
-                  <Ionicons name="checkmark" size={32} color="#ffffff" />
+              {/* Analysis Step - Active */}
+              <View style={[styles.step, styles.stepActive]}>
+                <View style={[
+                  styles.stepIcon, 
+                  styles.stepIconActive, 
+                  { 
+                    backgroundColor: '#7B68EE',
+                    shadowColor: '#7B68EE',
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 15,
+                    elevation: 12,
+                  }
+                ]}>
+                  <Ionicons name={currentConfig.icon} size={32} color="#ffffff" ref={iconRef} />
                 </View>
-                <Text style={[styles.stepLabel, styles.stepLabelCompleted]}>Analysis</Text>
+                <Text style={[styles.stepLabel, styles.stepLabelActive, { color: '#7B68EE' }]}>{currentConfig.name}</Text>
               </View>
 
-              {/* Deep Dive Step - Completed */}
+              {/* Launch Step - Pending */}
               <View style={styles.step}>
-                <View style={[styles.stepIcon, styles.stepIconCompleted, { backgroundColor: currentConfig.color }]}>
-                  <Ionicons name="checkmark" size={32} color="#ffffff" />
+                <View style={[styles.stepIcon, styles.stepIconPending]}>
+                  <Ionicons name="rocket" size={32} color="#ffffff" />
                 </View>
-                <Text style={[styles.stepLabel, styles.stepLabelCompleted]}>Deep Dive</Text>
+                <Text style={[styles.stepLabel, styles.stepLabelPending]}>Launch</Text>
               </View>
             </View>
           </Animatable.View>
 
           {/* Analysis Header */}
           <Animatable.View animation="fadeInUp" duration={800} delay={400}>
-            <View style={[styles.analysisHeader, { backgroundColor: isDarkMode ? colors.surface : '#ffffff' }]}>
+            <View style={[
+              styles.analysisHeader, 
+              { 
+                backgroundColor: isDarkMode ? colors.surface : '#FFFFFF',
+                shadowColor: '#7B68EE',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+                elevation: 8,
+              }
+            ]}>
               <View style={styles.analysisHeaderContent}>
-                <View style={[styles.analysisIcon, { backgroundColor: currentConfig.color + '15' }]}>
-                  <Text style={styles.analysisEmoji}>{currentConfig.emoji}</Text>
+                <View style={[styles.analysisIcon, { backgroundColor: '#7B68EE15' }]}>
+                  <Ionicons name={currentConfig.icon} size={32} color="#7B68EE" />
                 </View>
                 <View style={styles.analysisHeaderText}>
-                  <Text style={[styles.analysisHeaderTitle, { color: isDarkMode ? colors.text : '#111827' }]}>
+                  <Text style={[styles.analysisHeaderTitle, { color: isDarkMode ? colors.text : '#000000' }]}>
                     {currentConfig.name}
                   </Text>
-                  <Text style={[styles.analysisHeaderSubtitle, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+                  <Text style={[styles.analysisHeaderSubtitle, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
                     Specialized analysis complete
                   </Text>
                 </View>
-                <View style={[styles.completeBadge, { backgroundColor: currentConfig.color + '15' }]}>
-                  <Text style={[styles.completeText, { color: currentConfig.color }]}>✨ Complete</Text>
+                <View style={[styles.completeBadge, { backgroundColor: '#7B68EE15' }]}>
+                  <Text style={[styles.completeText, { color: '#7B68EE' }]}>Complete</Text>
                 </View>
               </View>
             </View>
@@ -1105,7 +1282,18 @@ export default function DeepAnalysisScreen({ navigation, route }) {
 
           {/* Deep Analysis Results */}
           <Animatable.View animation="fadeInUp" duration={800} delay={600}>
-            <View style={[styles.analysisResults, { backgroundColor: isDarkMode ? colors.surface : '#ffffff', borderLeftColor: currentConfig.color }]}>
+            <View style={[
+              styles.analysisResults, 
+              { 
+                backgroundColor: isDarkMode ? colors.surface : '#FFFFFF', 
+                borderLeftColor: '#7B68EE',
+                shadowColor: '#7B68EE',
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.18,
+                shadowRadius: 16,
+                elevation: 10,
+              }
+            ]}>
               <ScrollView style={styles.analysisContent} nestedScrollEnabled>
                 <AnalysisTextRenderer content={deepAnalysis?.analysis || 'Analysis results will appear here...'} />
               </ScrollView>
@@ -1116,18 +1304,39 @@ export default function DeepAnalysisScreen({ navigation, route }) {
           <Animatable.View animation="fadeInUp" duration={800} delay={800}>
             <View style={styles.actionButtons}>
               <TouchableOpacity
-                style={[styles.secondaryButton, { borderColor: isDarkMode ? colors.border : '#d1d5db' }]}
+                style={[
+                  styles.secondaryButton, 
+                  { 
+                    borderColor: isDarkMode ? colors.border : '#D3D3D3',
+                    backgroundColor: isDarkMode ? colors.surface : '#FFFFFF',
+                    shadowColor: '#7B68EE',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 12,
+                    elevation: 8,
+                  }
+                ]}
                 onPress={handleBackToResults}
                 activeOpacity={0.8}
               >
-                <Ionicons name="arrow-back" size={20} color={isDarkMode ? colors.text : '#374151'} />
-                <Text style={[styles.secondaryButtonText, { color: isDarkMode ? colors.text : '#374151' }]}>
+                <Ionicons name="arrow-back" size={20} color={isDarkMode ? colors.text : '#666666'} />
+                <Text style={[styles.secondaryButtonText, { color: isDarkMode ? colors.text : '#666666' }]}>
                   Back to Results
                 </Text>
               </TouchableOpacity>
               
               <TouchableOpacity
-                style={[styles.primaryButton, { backgroundColor: currentConfig.color }]}
+                style={[
+                  styles.primaryButton, 
+                  { 
+                    backgroundColor: '#7B68EE',
+                    shadowColor: '#7B68EE',
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 16,
+                    elevation: 12,
+                  }
+                ]}
                 onPress={handleShare}
                 activeOpacity={0.8}
               >
@@ -1140,7 +1349,7 @@ export default function DeepAnalysisScreen({ navigation, route }) {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
+          <Text style={[styles.footerText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
             Powered by OpenAI • Made with <Text style={styles.heart}>❤️</Text> for Product Innovators
           </Text>
         </View>
@@ -1670,7 +1879,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#D3D3D3',
     borderRadius: 12,
   },
   analysisHeaderLeft: {
@@ -1718,7 +1927,7 @@ const styles = StyleSheet.create({
     padding: 24,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#D3D3D3',
   },
   demoAnalysisContainer: {
     flexDirection: 'column',
