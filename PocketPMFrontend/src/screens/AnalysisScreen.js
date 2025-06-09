@@ -533,9 +533,6 @@ export default function AnalysisScreen({ navigation, route }) {
                         <View style={[styles.insightCard, styles.chartInsightCard, { backgroundColor: isDarkMode ? colors.background : '#FFFFFF' }]}>
                           <View style={styles.insightHeader}>
                             <Ionicons name="bar-chart" size={20} color="#7B68EE" />
-                            <Text style={[styles.insightTitle, { color: isDarkMode ? colors.text : '#000000' }]}>
-                              Market Size Growth
-                            </Text>
                           </View>
                           <View style={styles.chartContainer}>
                             <View style={styles.barChart}>
@@ -560,6 +557,12 @@ export default function AnalysisScreen({ navigation, route }) {
                                 </View>
                               ))}
                             </View>
+                          </View>
+                          <View style={styles.chartTitleContainer}>
+                            <Ionicons name="bar-chart" size={16} color="#7B68EE" style={styles.chartTitleIcon} />
+                            <Text style={[styles.chartTitle, { color: isDarkMode ? colors.text : '#000000' }]}>
+                              Market Size Growth
+                            </Text>
                           </View>
                         </View>
 
@@ -1666,5 +1669,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'System',
     marginBottom: 12,
+  },
+  chartTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  chartTitleIcon: {
+    marginRight: 8,
+  },
+  chartTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: 'System',
   },
 });
