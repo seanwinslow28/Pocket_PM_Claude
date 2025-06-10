@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -12,15 +12,19 @@ import {
   Modal,
   Switch,
   Alert,
+  Animated,
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import * as Animatable from 'react-native-animatable';
 import ApiService from '../services/api';
 import StorageService from '../utils/storage';
 import { useTheme } from '../contexts/ThemeContext';
 import dummyDataService from '../services/dummyDataService';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
   const { colors, styles: themeStyles, isDarkMode } = useTheme();
@@ -30,70 +34,128 @@ export default function HomeScreen({ navigation }) {
   const [recentAnalyses, setRecentAnalyses] = useState([]);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [testMode, setTestMode] = useState(false);
-  const [showWritingTips, setShowWritingTips] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [showTyping, setShowTyping] = useState(false);
 
-  // Input validation and helper functions
-  const getCharacterCount = () => idea.length;
-  const getWordCount = () => idea.trim().split(/\s+/).filter(word => word.length > 0).length;
-  const isIdeaTooShort = () => idea.trim().length < 20;
-  const isIdeaTooLong = () => idea.length > 1000;
-  const hasGoodLength = () => idea.trim().length >= 50 && idea.length <= 500;
+  // Animation refs
+  const logoGlow = useRef(new Animated.Value(0)).current;
+  const shimmer = useRef(new Animated.Value(0)).current;
+  const typingDots = useRef([
+    new Animated.Value(0.5),
+    new Animated.Value(0.5),
+    new Animated.Value(0.5),
+  ]).current;
+  const floatingShapes = useRef([
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+  ]).current;
 
-  const getInputValidation = () => {
-    if (idea.trim().length === 0) return { type: 'empty', message: 'Tell us about your product idea' };
-    if (isIdeaTooShort()) return { type: 'warning', message: 'Add more details for better analysis' };
-    if (isIdeaTooLong()) return { type: 'error', message: 'Please keep it under 1000 characters' };
-    if (hasGoodLength()) return { type: 'success', message: 'Perfect! Ready for analysis' };
-    return { type: 'info', message: 'Looking good, add more details if needed' };
-  };
-
-  const validation = getInputValidation();
-
-  // Enhanced example ideas with better variety
-  const exampleIdeas = [
-    {
-      category: 'Health & Fitness',
-      text: "A mobile app that helps people find and book local fitness classes with real-time availability, instructor ratings, and flexible payment options",
-      short: "Fitness class finder"
-    },
-    {
-      category: 'Food & Sustainability', 
-      text: "An AI-powered meal planning service that creates personalized weekly menus based on dietary preferences, reduces food waste by optimizing portions, and connects users with local farmers",
-      short: "Smart meal planner"
-    },
-    {
-      category: 'Remote Work',
-      text: "A platform connecting remote workers with local coffee shops, co-working spaces, and quiet venues, featuring wifi speed tests, noise levels, and booking capabilities",
-      short: "Remote workspace finder"
-    },
-    {
-      category: 'Education',
-      text: "An interactive learning platform that uses gamification and AI to help adults learn new skills through bite-sized lessons, peer collaboration, and real-world projects",
-      short: "Adult skill learning"
-    },
-    {
-      category: 'Home Services',
-      text: "A marketplace for trusted local service providers (cleaning, repairs, gardening) with instant booking, transparent pricing, and quality guarantees",
-      short: "Home services marketplace"
-    },
-    {
-      category: 'Financial Planning',
-      text: "A personal finance app that helps young adults build wealth through automated savings, investment education, and goal-based financial planning with social features",
-      short: "Youth wealth builder"
-    }
+  // Quick prompts
+  const quickPrompts = [
+    '💡 New Idea',
+    '📊 Market Analysis', 
+    '🚀 Go-to-Market',
+    '📈 Growth Strategy'
   ];
-
-  const getRandomExample = () => {
-    const randomIndex = Math.floor(Math.random() * exampleIdeas.length);
-    return exampleIdeas[randomIndex];
-  };
 
   useEffect(() => {
     loadUserData();
     loadRecentAnalyses();
     loadTestMode();
+    startAnimations();
+    initializeWelcomeMessages();
   }, []);
+
+  const startAnimations = () => {
+    // Logo glow animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(logoGlow, {
+          toValue: 1,
+          duration: 3000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(logoGlow, {
+          toValue: 0,
+          duration: 3000,
+          useNativeDriver: false,
+        }),
+      ])
+    ).start();
+
+    // Shimmer effect
+    Animated.loop(
+      Animated.timing(shimmer, {
+        toValue: 1,
+        duration: 2000,
+        useNativeDriver: true,
+      })
+    ).start();
+
+    // Floating shapes animation
+    floatingShapes.forEach((shape, index) => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(shape, {
+            toValue: 1,
+            duration: 6000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shape, {
+            toValue: 0,
+            duration: 6000,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    });
+
+    // Typing animation
+    const typingAnimation = () => {
+      typingDots.forEach((dot, index) => {
+        Animated.loop(
+          Animated.sequence([
+            Animated.delay(index * 200),
+            Animated.timing(dot, {
+              toValue: 1,
+              duration: 400,
+              useNativeDriver: false,
+            }),
+            Animated.timing(dot, {
+              toValue: 0.5,
+              duration: 800,
+              useNativeDriver: false,
+            }),
+          ])
+        ).start();
+      });
+    };
+
+    if (showTyping) {
+      typingAnimation();
+    }
+  };
+
+  const initializeWelcomeMessages = () => {
+    const welcomeMessages = [
+      {
+        id: 1,
+        type: 'user',
+        content: 'I have an idea for a productivity app that helps remote teams stay connected. Can you help me develop this?',
+        timestamp: new Date(),
+      },
+      {
+        id: 2,
+        type: 'ai',
+        content: 'Excellent! Remote team connectivity is a huge opportunity. Let me break this down into a comprehensive product strategy. I\'ll analyze the market, identify your target users, and create an execution roadmap.',
+        timestamp: new Date(),
+      }
+    ];
+    setMessages(welcomeMessages);
+    setShowTyping(true);
+  };
 
   const loadUserData = async () => {
     const userData = await ApiService.getCurrentUser();
@@ -140,17 +202,15 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleAnalyze = async () => {
-    if (!idea.trim() || isIdeaTooLong()) {
+    if (!idea.trim()) {
       return;
     }
 
     setIsAnalyzing(true);
     
     try {
-      // Small delay for better UX 
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Navigate to loading screen with the idea
       navigation.navigate('Loading', { 
         idea: idea.trim(),
       });
@@ -162,7 +222,117 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
-  const isButtonDisabled = !idea.trim() || isIdeaTooLong() || isAnalyzing;
+  const handleQuickPrompt = (prompt) => {
+    setIdea(prompt);
+  };
+
+  const shimmerTranslate = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-100, 100],
+  });
+
+  const getFloatingShapeStyle = (index) => {
+    const translateY = floatingShapes[index].interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, -20],
+    });
+    const rotate = floatingShapes[index].interpolate({
+      inputRange: [0, 1],
+      outputRange: ['0deg', '180deg'],
+    });
+    
+    return {
+      transform: [{ translateY }, { rotate }],
+    };
+  };
+
+  const renderMessage = (message, index) => {
+    const isUser = message.type === 'user';
+    return (
+      <Animatable.View
+        key={message.id}
+        animation="fadeInUp"
+        delay={index * 200}
+        style={[styles.messageContainer, isUser ? styles.userMessageContainer : styles.aiMessageContainer]}
+      >
+        {!isUser && (
+          <View style={styles.aiAvatar}>
+            <LinearGradient
+              colors={['#4ecdc4', '#45b7d1']}
+              style={styles.avatarGradient}
+            >
+              <Text style={styles.avatarText}>PM</Text>
+            </LinearGradient>
+          </View>
+        )}
+        
+        <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.aiBubble]}>
+          {isUser ? (
+            <LinearGradient
+              colors={['#ff6b6b', '#4ecdc4']}
+              style={styles.userMessageGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Text style={styles.userMessageText}>{message.content}</Text>
+            </LinearGradient>
+          ) : (
+            <View style={styles.aiMessageWrapper}>
+              <Text style={styles.aiMessageText}>{message.content}</Text>
+            </View>
+          )}
+        </View>
+
+        {isUser && (
+          <View style={styles.userAvatar}>
+            <LinearGradient
+              colors={['#ff6b6b', '#4ecdc4']}
+              style={styles.avatarGradient}
+            >
+              <Text style={styles.avatarText}>U</Text>
+            </LinearGradient>
+          </View>
+        )}
+      </Animatable.View>
+    );
+  };
+
+  const renderTypingIndicator = () => (
+    <View style={styles.messageContainer}>
+      <View style={styles.aiAvatar}>
+        <LinearGradient
+          colors={['#4ecdc4', '#45b7d1']}
+          style={styles.avatarGradient}
+        >
+          <Text style={styles.avatarText}>PM</Text>
+        </LinearGradient>
+      </View>
+      
+      <View style={styles.typingBubble}>
+        <View style={styles.typingDotsContainer}>
+          {typingDots.map((dot, index) => (
+            <Animated.View
+              key={index}
+              style={[
+                styles.typingDot,
+                {
+                  opacity: dot,
+                  transform: [
+                    {
+                      scale: dot.interpolate({
+                        inputRange: [0.5, 1],
+                        outputRange: [0.8, 1],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
+          ))}
+        </View>
+      </View>
+    </View>
+  );
 
   const SettingsModal = () => (
     <Modal
@@ -171,654 +341,592 @@ export default function HomeScreen({ navigation }) {
       presentationStyle="pageSheet"
       onRequestClose={() => setShowSettingsModal(false)}
     >
-      <SafeAreaView style={[styles.modalContainer, { backgroundColor: isDarkMode ? colors.background : '#FFFFFF' }]}>
-        {/* Modal Header */}
-        <View style={[styles.modalHeader, { backgroundColor: isDarkMode ? colors.surface : '#FFFFE3', borderBottomColor: isDarkMode ? colors.border : '#D3D3D3' }]}>
-          <TouchableOpacity onPress={() => setShowSettingsModal(false)} style={styles.closeButton} activeOpacity={0.7}>
-            <Ionicons name="close" size={24} color={isDarkMode ? colors.text : '#000000'} />
-          </TouchableOpacity>
-          <Text style={[styles.modalTitle, { color: isDarkMode ? colors.text : '#000000' }]}>Settings</Text>
-          <View style={styles.headerSpacer} />
-        </View>
-
-        {/* Modal Content */}
-        <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
-          {/* Development Section */}
-          <View style={styles.modalSection}>
-            <Text style={[styles.modalSectionTitle, { color: isDarkMode ? colors.text : '#000000' }]}>
-              🧪 Development
-            </Text>
-            <Text style={[styles.modalSectionDescription, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
-              Settings for development and testing
-            </Text>
-
-            <View style={[styles.settingItem, { backgroundColor: isDarkMode ? colors.surface : '#FFFFE3', borderColor: isDarkMode ? colors.border : '#D3D3D3' }]}>
-              <View style={styles.settingItemLeft}>
-                <View style={[styles.settingIcon, { backgroundColor: '#7B68EE15' }]}>
-                  <Ionicons name="flask" size={24} color="#7B68EE" />
-                </View>
-                <View style={styles.settingItemText}>
-                  <Text style={[styles.settingTitle, { color: isDarkMode ? colors.text : '#000000' }]}>
-                    Test Mode
-                  </Text>
-                  <Text style={[styles.settingDescription, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
-                    Use dummy data instead of real API calls
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={testMode}
-                onValueChange={handleTestModeToggle}
-                trackColor={{ false: '#D3D3D3', true: '#7B68EE30' }}
-                thumbColor={testMode ? '#7B68EE' : '#9ca3af'}
-                ios_backgroundColor="#D3D3D3"
-              />
-            </View>
+      <SafeAreaView style={styles.modalContainer}>
+        <LinearGradient
+          colors={['#0a0a0a', '#1a1a1a']}
+          style={styles.modalGradient}
+        >
+          <View style={styles.modalHeader}>
+            <TouchableOpacity 
+              onPress={() => setShowSettingsModal(false)} 
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color="#fff" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Settings</Text>
+            <View style={styles.headerSpacer} />
           </View>
 
-          {/* Test Mode Info */}
-          {testMode && (
-            <View style={[styles.infoCard, { backgroundColor: '#7B68EE15', borderColor: '#7B68EE' }]}>
-              <View style={styles.infoCardContent}>
-                <Ionicons name="warning" size={20} color="#7B68EE" />
-                <Text style={[styles.infoTitle, { color: '#7B68EE' }]}>Test Mode Active</Text>
-              </View>
-              <Text style={[styles.infoDescription, { color: '#7B68EE' }]}>
-                Using dummy data. Toggle off to use real OpenAI API calls.
+          <ScrollView style={styles.modalContent}>
+            <View style={styles.modalSection}>
+              <Text style={styles.modalSectionTitle}>🧪 Development</Text>
+              <Text style={styles.modalSectionDescription}>
+                Settings for development and testing
               </Text>
-            </View>
-          )}
 
-          {/* Footer */}
-          <View style={styles.modalFooter}>
-            <Text style={[styles.modalFooterText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
-              Made with ❤️ for Product Innovators
-            </Text>
-            <Text style={[styles.modalFooterText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
-              Version 1.0.0
-            </Text>
-          </View>
-        </ScrollView>
+              <View style={styles.settingItem}>
+                <View style={styles.settingItemLeft}>
+                  <View style={styles.settingIcon}>
+                    <Ionicons name="flask" size={24} color="#7B68EE" />
+                  </View>
+                  <View style={styles.settingItemText}>
+                    <Text style={styles.settingTitle}>Test Mode</Text>
+                    <Text style={styles.settingDescription}>
+                      Use dummy data instead of OpenAI API
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  value={testMode}
+                  onValueChange={handleTestModeToggle}
+                  trackColor={{ false: '#767577', true: '#4ecdc4' }}
+                  thumbColor={testMode ? '#fff' : '#f4f3f4'}
+                />
+              </View>
+            </View>
+          </ScrollView>
+        </LinearGradient>
       </SafeAreaView>
     </Modal>
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#FFFFFF' }]}>
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={['#7B68EE']}
-            tintColor="#7B68EE"
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      
+      <LinearGradient
+        colors={['#0a0a0a', '#1a1a1a']}
+        style={styles.background}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
+      
+      {/* Floating Background Shapes */}
+      <View style={styles.floatingElements} pointerEvents="none">
+        <Animated.View style={[styles.floatingShape1, getFloatingShapeStyle(0)]}>
+          <LinearGradient
+            colors={['#ff6b6b', '#4ecdc4']}
+            style={styles.shapeGradient}
           />
-        }
-      >
-        {/* Header */}
-        <View style={[
-          styles.header, 
-          { 
-            backgroundColor: isDarkMode ? colors.surface : '#FFFFFF', 
-            borderBottomColor: isDarkMode ? colors.border : '#D3D3D3',
-            shadowColor: '#7B68EE',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 6,
-            elevation: 4,
-          }
-        ]}>
-          <View style={styles.headerLeft}>
+        </Animated.View>
+        <Animated.View style={[styles.floatingShape2, getFloatingShapeStyle(1)]}>
+          <LinearGradient
+            colors={['#4ecdc4', '#45b7d1']}
+            style={styles.shapeGradient}
+          />
+        </Animated.View>
+        <Animated.View style={[styles.floatingShape3, getFloatingShapeStyle(2)]}>
+          <LinearGradient
+            colors={['#45b7d1', '#ff6b6b']}
+            style={styles.shapeGradient}
+          />
+        </Animated.View>
+      </View>
+
+      <SafeAreaView style={styles.safeArea}>
+        {/* Header with exact styling */}
+        <View style={styles.header}>
+          <BlurView intensity={20} tint="dark" style={styles.headerBlur}>
+            <TouchableOpacity 
+              style={styles.settingsButton}
+              onPress={() => setShowSettingsModal(true)}
+            >
+              <Ionicons name="settings" size={20} color="rgba(255,255,255,0.8)" />
+            </TouchableOpacity>
+            
             <View style={styles.logoContainer}>
-              <View style={[styles.logo, { backgroundColor: '#7B68EE' }]}>
-                <Ionicons name="create" size={24} color="#ffffff" />
-                <View style={styles.sparkles}>
-                  <Ionicons name="sparkles" size={12} color="#ffffff" />
-                </View>
+              <View style={styles.logoIcon}>
+                <LinearGradient
+                  colors={['#ff6b6b', '#4ecdc4', '#45b7d1']}
+                  style={styles.logoGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Text style={styles.logoText}>PM</Text>
+                  {/* Shimmer overlay */}
+                  <Animated.View
+                    style={[
+                      styles.shimmerOverlay,
+                      {
+                        transform: [{ translateX: shimmerTranslate }],
+                      },
+                    ]}
+                  />
+                </LinearGradient>
               </View>
+              <Text style={styles.logoTitle}>Pocket PM</Text>
             </View>
-            <View style={styles.titleContainer}>
-              <Text style={[styles.title, { color: isDarkMode ? colors.text : '#000000' }]}>Pocket PM</Text>
-              <Text style={[styles.subtitle, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
-                AI-powered product analysis
-              </Text>
-            </View>
-          </View>
-          <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('ProfileMain')} activeOpacity={0.7}>
-              <Ionicons name="time-outline" size={20} color={isDarkMode ? colors.textSecondary : '#666666'} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton} onPress={() => setShowSettingsModal(true)} activeOpacity={0.7}>
-              <Ionicons name="settings-outline" size={20} color={isDarkMode ? colors.textSecondary : '#666666'} />
-            </TouchableOpacity>
-          </View>
+            
+            <View style={styles.headerSpacer} />
+          </BlurView>
         </View>
 
-        {/* Main Content */}
-        <View style={styles.mainContent}>
-          {/* Steps */}
-          <Animatable.View animation="fadeInUp" duration={800} delay={400}>
-            <View style={styles.stepsContainer}>
-              <View style={styles.step}>
-                <View style={[
-                  styles.stepIcon, 
-                  { 
-                    backgroundColor: '#7B68EE',
-                    shadowColor: '#7B68EE',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 10,
-                    elevation: 6,
-                  }
-                ]}>
-                  <Ionicons name="bulb" size={32} color="#ffffff" />
-                </View>
-                <Text style={styles.stepLabel}>Share</Text>
-              </View>
-              <View style={styles.step}>
-                <View style={[
-                  styles.stepIcon, 
-                  { 
-                    backgroundColor: '#7B68EE',
-                    shadowColor: '#7B68EE',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 10,
-                    elevation: 6,
-                  }
-                ]}>
-                  <Ionicons name="analytics" size={32} color="#ffffff" />
-                </View>
-                <Text style={styles.stepLabel}>Analyze</Text>
-              </View>
-              <View style={styles.step}>
-                <View style={[
-                  styles.stepIcon, 
-                  { 
-                    backgroundColor: '#7B68EE',
-                    shadowColor: '#7B68EE',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 10,
-                    elevation: 6,
-                  }
-                ]}>
-                  <Ionicons name="rocket" size={32} color="#ffffff" />
-                </View>
-                <Text style={styles.stepLabel}>Launch</Text>
-              </View>
+        {/* Chat Container */}
+        <ScrollView 
+          style={styles.chatContainer}
+          contentContainerStyle={styles.chatContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#4ecdc4"
+            />
+          }
+        >
+          {/* Welcome Message - exact styling */}
+          <View style={styles.welcomeContainer}>
+            <View style={styles.welcomeTitleContainer}>
+              <LinearGradient
+                colors={['#ff6b6b', '#4ecdc4']}
+                style={styles.welcomeTitleGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Text style={styles.welcomeTitleText}>Your AI Product Strategist</Text>
+              </LinearGradient>
             </View>
-          </Animatable.View>
+            <Text style={styles.welcomeSubtitle}>
+              Turn your ideas into actionable product roadmaps
+            </Text>
+          </View>
 
-          {/* Form */}
-          <Animatable.View animation="fadeInUp" duration={800} delay={600}>
-            <View style={styles.formContainer}>
-              <Text style={[styles.formTitle, { color: isDarkMode ? colors.text : '#000000' }]}>Share Your Idea</Text>
-              <Text style={[styles.formSubtitle, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
-                Tell us about your product idea and get AI-powered insights in seconds
-              </Text>
+          {/* Quick Prompts - exact styling */}
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            style={styles.quickPromptsContainer}
+            contentContainerStyle={styles.quickPromptsContent}
+          >
+            {quickPrompts.map((prompt, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.quickPromptWrapper}
+                onPress={() => handleQuickPrompt(prompt)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.quickPrompt}>
+                  <Text style={styles.quickPromptText}>{prompt}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
 
-              {/* Text Input */}
+          {/* Messages */}
+          {messages.map((message, index) => renderMessage(message, index))}
+          
+          {/* Typing Indicator */}
+          {showTyping && renderTypingIndicator()}
+        </ScrollView>
+
+        {/* Input Container - exact styling */}
+        <View style={styles.inputContainer}>
+          <BlurView intensity={20} tint="dark" style={styles.inputBlur}>
+            <View style={styles.inputWrapper}>
               <TextInput
-                style={[
-                  styles.textInput,
-                  {
-                    backgroundColor: isDarkMode ? colors.input : '#FFFFFF',
-                    borderColor: validation.type === 'error' ? '#7B68EE' :
-                      validation.type === 'success' ? '#7B68EE' :
-                      validation.type === 'warning' ? '#7B68EE' :
-                      isDarkMode ? colors.border : '#D3D3D3',
-                    color: isDarkMode ? colors.text : '#000000',
-                    shadowColor: '#7B68EE',
-                    shadowOffset: { width: 0, height: 3 },
-                    shadowOpacity: 0.12,
-                    shadowRadius: 8,
-                    elevation: 5,
-                  }
-                ]}
-                placeholder="Describe your product idea in detail. What problem does it solve? How does it work? Who is your target audience?"
-                placeholderTextColor={isDarkMode ? colors.placeholder : '#999999'}
+                style={styles.messageInput}
+                placeholder="Describe your product idea..."
+                placeholderTextColor="rgba(255, 255, 255, 0.5)"
                 value={idea}
                 onChangeText={setIdea}
                 multiline
-                numberOfLines={8}
-                textAlignVertical="top"
-                editable={!isAnalyzing}
               />
-
-              {/* Analyze Button */}
               <TouchableOpacity
-                style={[
-                  styles.analyzeButton,
-                  {
-                    backgroundColor: validation.type === 'success' ? '#7B68EE' :
-                      isIdeaTooLong() ? '#D3D3D3' :
-                      isAnalyzing ? '#7B68EE' : '#7B68EE',
-                    opacity: isButtonDisabled ? 0.6 : 1,
-                    shadowColor: '#7B68EE',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 12,
-                    elevation: 8,
-                  }
-                ]}
+                style={styles.sendButtonWrapper}
                 onPress={handleAnalyze}
-                disabled={isButtonDisabled}
+                disabled={!idea.trim() || isAnalyzing}
                 activeOpacity={0.8}
               >
-                {isAnalyzing ? (
-                  <>
-                    <Ionicons name="hourglass" size={20} color="#ffffff" />
-                    <Text style={styles.analyzeButtonText}>Starting Analysis...</Text>
-                  </>
-                ) : (
-                  <>
-                    <Ionicons name="sparkles" size={20} color="#ffffff" />
-                    <Text style={styles.analyzeButtonText}>
-                      {validation.type === 'error' ? 'Too Long - Shorten First' : 'Analyze My Idea'}
-                    </Text>
-                  </>
-                )}
+                <LinearGradient
+                  colors={['#ff6b6b', '#4ecdc4']}
+                  style={styles.sendButton}
+                >
+                  <Ionicons 
+                    name={isAnalyzing ? "hourglass" : "arrow-forward"} 
+                    size={16} 
+                    color="white" 
+                  />
+                </LinearGradient>
               </TouchableOpacity>
             </View>
-          </Animatable.View>
-
-          {/* Examples */}
-          <Animatable.View animation="fadeInUp" duration={800} delay={800}>
-            <View style={styles.examplesContainer}>
-              <Text style={[styles.examplesTitle, { color: isDarkMode ? colors.text : '#000000' }]}>💡 Need inspiration?</Text>
-              
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.examplesScroll}>
-                {exampleIdeas.map((example, index) => {
-                  // Create different gradient styles for each card
-                  const gradientStyles = [
-                    { backgroundColor: 'linear-gradient(135deg, #7B68EE15 0%, #FFFFFF 100%)', borderColor: '#7B68EE30' },
-                    { backgroundColor: 'linear-gradient(135deg, #9B59B615 0%, #FFFFFF 100%)', borderColor: '#9B59B630' },
-                    { backgroundColor: 'linear-gradient(135deg, #6A5ACD15 0%, #FFFFFF 100%)', borderColor: '#6A5ACD30' },
-                    { backgroundColor: 'linear-gradient(135deg, #8A70D315 0%, #FFFFFF 100%)', borderColor: '#8A70D330' },
-                    { backgroundColor: 'linear-gradient(135deg, #7B68EE20 0%, #FFFFFF 100%)', borderColor: '#7B68EE40' },
-                    { backgroundColor: 'linear-gradient(135deg, #6B5B9515 0%, #FFFFFF 100%)', borderColor: '#6B5B9530' }
-                  ];
-                  
-                  // Fallback solid colors for React Native compatibility
-                  const cardColors = [
-                    { backgroundColor: '#7B68EE08', borderColor: '#7B68EE25', shadowColor: '#7B68EE' },
-                    { backgroundColor: '#9B59B608', borderColor: '#9B59B625', shadowColor: '#9B59B6' },
-                    { backgroundColor: '#6A5ACD08', borderColor: '#6A5ACD25', shadowColor: '#6A5ACD' },
-                    { backgroundColor: '#8A70D308', borderColor: '#8A70D325', shadowColor: '#8A70D3' },
-                    { backgroundColor: '#7B68EE12', borderColor: '#7B68EE30', shadowColor: '#7B68EE' },
-                    { backgroundColor: '#6B5B9508', borderColor: '#6B5B9525', shadowColor: '#6B5B95' }
-                  ];
-                  
-                  const cardStyle = cardColors[index % cardColors.length];
-                  
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      style={[
-                        styles.exampleChip, 
-                        { 
-                          backgroundColor: isDarkMode ? colors.surface : cardStyle.backgroundColor,
-                          borderColor: isDarkMode ? colors.border : cardStyle.borderColor,
-                          borderWidth: 1.5,
-                          shadowColor: cardStyle.shadowColor,
-                          shadowOffset: { width: 0, height: 2 },
-                          shadowOpacity: 0.15,
-                          shadowRadius: 4,
-                          elevation: 3,
-                        }
-                      ]}
-                      onPress={() => setIdea(example.text)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.exampleCategory, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
-                        {example.category}
-                      </Text>
-                      <Text style={[styles.exampleText, { color: isDarkMode ? colors.text : '#000000' }]}>
-                        {example.short}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-                <TouchableOpacity
-                  style={[styles.randomExampleChip, { borderColor: isDarkMode ? colors.border : '#D3D3D3' }]}
-                  onPress={() => {
-                    const randomExample = getRandomExample();
-                    setIdea(randomExample.text);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.randomExampleContent}>
-                    <Ionicons name="shuffle" size={16} color={isDarkMode ? colors.textSecondary : '#666666'} />
-                    <Text style={[styles.randomExampleText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
-                      Random idea
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </ScrollView>
-            </View>
-          </Animatable.View>
+          </BlurView>
         </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
-            Made with ❤️ for Product Innovators
-          </Text>
-        </View>
-      </ScrollView>
+      </SafeAreaView>
 
       <SettingsModal />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#0a0a0a',
   },
-  scrollView: {
+  background: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  floatingElements: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  floatingShape1: {
+    position: 'absolute',
+    top: '10%',
+    left: '10%',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    opacity: 0.1,
+  },
+  floatingShape2: {
+    position: 'absolute',
+    top: '60%',
+    right: '15%',
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    opacity: 0.1,
+  },
+  floatingShape3: {
+    position: 'absolute',
+    bottom: '20%',
+    left: '20%',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    opacity: 0.1,
+  },
+  shapeGradient: {
+    flex: 1,
+    borderRadius: 40,
+  },
+  safeArea: {
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24, // 1.5rem
-    paddingVertical: 16, // 1rem
-    borderBottomWidth: 1,
+    height: 80,
   },
-  headerLeft: {
+  headerBlur: {
+    flex: 1,
     flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 16, // 1rem
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    position: 'relative',
+  },
+  settingsButton: {
+    position: 'absolute',
+    left: 20,
+    padding: 8,
   },
   logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  logoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    overflow: 'hidden',
     position: 'relative',
   },
-  logo: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  logoGradient: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
+    overflow: 'hidden',
   },
-  sparkles: {
+  logoText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    zIndex: 2,
+  },
+  shimmerOverlay: {
     position: 'absolute',
-    top: -4,
-    right: -4,
+    top: -50,
+    left: -50,
+    width: 200,
+    height: 200,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    transform: [{ rotate: '45deg' }],
   },
-  titleContainer: {
-    flexDirection: 'column',
+  logoTitle: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
+  headerSpacer: {
+    width: 36,
+  },
+  chatContainer: {
     flex: 1,
   },
-  title: {
-    fontSize: 24, // 1.5rem
+  chatContent: {
+    padding: 24,
+    paddingBottom: 20,
+  },
+  welcomeContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  welcomeTitleContainer: {
+    marginBottom: 8,
+  },
+  welcomeTitleGradient: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  welcomeTitleText: {
+    fontSize: 24,
     fontWeight: '700',
-    fontFamily: 'System',
-  },
-  subtitle: {
-    fontSize: 14, // 0.875rem
-    fontWeight: '400',
-    fontFamily: 'System',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12, // 0.75rem
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  mainContent: {
-    maxWidth: 1024, // 64rem
-    width: '100%',
-    alignSelf: 'center',
-    paddingHorizontal: 24, // 1.5rem
-    paddingVertical: 48, // 3rem
-  },
-  stepsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 32, // 2rem
-    marginBottom: 64, // 4rem
-  },
-  step: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 12, // 0.75rem
-  },
-  stepIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  stepLabel: {
-    fontWeight: '500',
-    color: '#666666',
-    fontFamily: 'System',
-  },
-  formContainer: {
-    maxWidth: 512, // 32rem
-    width: '100%',
-    alignSelf: 'center',
-  },
-  formTitle: {
-    fontSize: 30, // 1.875rem
-    fontWeight: '700',
+    color: 'white',
     textAlign: 'center',
-    marginBottom: 16, // 1rem
-    fontFamily: 'System',
   },
-  formSubtitle: {
-    fontSize: 16, // 1rem
-    textAlign: 'center',
-    marginBottom: 32, // 2rem
-    fontFamily: 'System',
-    lineHeight: 24,
-  },
-  textInput: {
-    minHeight: 160,
-    padding: 16,
+  welcomeSubtitle: {
     fontSize: 16,
-    borderWidth: 2,
-    borderRadius: 12,
-    fontFamily: 'System',
-    lineHeight: 24,
-    textAlignVertical: 'top',
-    marginBottom: 12,
-  },
-  analyzeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8, // 0.5rem
-    paddingVertical: 18, // 1rem
-    paddingHorizontal: 32, // 2rem
-    borderRadius: 16, // 0.75rem
-    marginTop: 8,
-  },
-  analyzeButtonText: {
-    color: '#ffffff',
-    fontSize: 18, // 1.125rem
-    fontWeight: '700',
-    fontFamily: 'System',
-  },
-  examplesContainer: {
-    marginTop: 40, // 2.5rem
-  },
-  examplesTitle: {
-    fontSize: 18, // 1.125rem
-    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
-    marginBottom: 16, // 1rem
-    fontFamily: 'System',
+    lineHeight: 22,
   },
-  examplesScroll: {
-    padding: 12,
+  quickPromptsContainer: {
+    marginBottom: 20,
   },
-  exampleChip: {
-    padding: 18,
-    marginRight: 14,
-    marginBottom: 12,
-    borderRadius: 18,
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    minWidth: 180,
-    maxWidth: 200,
-    minHeight: 80,
-    justifyContent: 'center',
+  quickPromptsContent: {
+    paddingHorizontal: 4,
   },
-  exampleCategory: {
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: 'System',
-    marginBottom: 6,
-    opacity: 0.8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  quickPromptWrapper: {
+    marginRight: 8,
   },
-  exampleText: {
-    fontSize: 15,
-    fontWeight: '600',
-    fontFamily: 'System',
-    lineHeight: 20,
-  },
-  randomExampleChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  quickPrompt: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderRadius: 16,
-    minWidth: 120,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 20,
   },
-  randomExampleContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  randomExampleText: {
+  quickPromptText: {
+    color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 14,
     fontWeight: '500',
-    fontFamily: 'System',
-    marginLeft: 6,
   },
-  footer: {
-    textAlign: 'center',
-    paddingVertical: 32, // 2rem
+  messageContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 12,
+    marginBottom: 20,
+  },
+  userMessageContainer: {
+    flexDirection: 'row-reverse',
+  },
+  aiMessageContainer: {
+    flexDirection: 'row',
+  },
+  aiAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  userAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  avatarGradient: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  footerText: {
+  avatarText: {
+    color: 'white',
     fontSize: 14,
-    textAlign: 'center',
-    fontFamily: 'System',
+    fontWeight: 'bold',
   },
-  heart: {
-    color: '#ef4444',
+  messageBubble: {
+    maxWidth: width * 0.7,
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  userBubble: {
+    borderBottomRightRadius: 8,
+  },
+  aiBubble: {
+    borderBottomLeftRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  userMessageGradient: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  userMessageText: {
+    color: 'white',
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  aiMessageWrapper: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  aiMessageText: {
+    color: 'white',
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  typingBubble: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 20,
+    borderBottomLeftRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  typingDotsContainer: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  typingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+  },
+  inputContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    paddingBottom: 34, // Extra padding for home indicator
+  },
+  inputBlur: {
+    borderRadius: 25,
+    overflow: 'hidden',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 25,
+  },
+  messageInput: {
+    flex: 1,
+    color: 'white',
+    fontSize: 16,
+    maxHeight: 100,
+    minHeight: 24,
+    textAlignVertical: 'center',
+  },
+  sendButtonWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  sendButton: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalContainer: {
     flex: 1,
+    backgroundColor: '#0a0a0a',
+  },
+  modalGradient: {
+    flex: 1,
   },
   modalHeader: {
+    height: 60,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
   closeButton: {
     padding: 8,
   },
+  modalTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
   modalContent: {
     flex: 1,
+    padding: 20,
   },
   modalSection: {
-    padding: 24,
+    marginBottom: 30,
   },
   modalSectionTitle: {
-    fontSize: 24,
+    color: '#fff',
+    fontSize: 20,
     fontWeight: '700',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   modalSectionDescription: {
+    color: 'rgba(255,255,255,0.7)',
     fontSize: 16,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     padding: 16,
-    borderWidth: 1,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   settingItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    flex: 1,
   },
   settingIcon: {
     width: 40,
     height: 40,
+    backgroundColor: 'rgba(123, 104, 238, 0.15)',
     borderRadius: 20,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
   },
   settingItemText: {
-    flexDirection: 'column',
-  },
-  settingTitle: {
-    fontSize: 18,
-    fontWeight: '500',
-  },
-  settingDescription: {
-    fontSize: 14,
-    fontWeight: '400',
-  },
-  infoCard: {
-    padding: 16,
-    borderWidth: 2,
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  infoCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  infoTitle: {
-    fontSize: 18,
-    fontWeight: '500',
-  },
-  infoDescription: {
-    fontSize: 14,
-    fontWeight: '400',
-  },
-  modalFooter: {
-    padding: 16,
-    alignItems: 'center',
-  },
-  modalFooterText: {
-    fontSize: 14,
-    fontWeight: '400',
-  },
-  headerSpacer: {
     flex: 1,
   },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+  settingTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  settingDescription: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 14,
   },
 });
