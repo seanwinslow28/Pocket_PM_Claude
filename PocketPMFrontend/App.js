@@ -17,6 +17,7 @@ import DeepAnalysisScreen from './src/screens/DeepAnalysisScreen';
 import LaunchScreen from './src/screens/LaunchScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+import ChatScreen from './src/screens/ChatScreen';
 
 // Import Auth Context
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
@@ -39,7 +40,7 @@ const theme = {
   },
 };
 
-// Stack Navigator for Home flow (Home -> Loading -> Analysis Results -> Deep Dive -> Launch)
+// Stack Navigator for Home flow (Home -> Loading -> Analysis Results -> Deep Dive -> Launch -> Chat)
 function HomeStack() {
   return (
     <Stack.Navigator
@@ -52,6 +53,7 @@ function HomeStack() {
       <Stack.Screen name="AnalysisResults" component={AnalysisScreen} />
       <Stack.Screen name="DeepDive" component={DeepAnalysisScreen} />
       <Stack.Screen name="Launch" component={LaunchScreen} />
+      <Stack.Screen name="Chat" component={ChatScreen} />
     </Stack.Navigator>
   );
 }
@@ -93,6 +95,8 @@ function TabNavigator() {
           
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'Chat') {
+            iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
           } else if (route.name === 'Analysis') {
             iconName = focused ? 'analytics' : 'analytics-outline';
           } else if (route.name === 'Profile') {
@@ -107,6 +111,7 @@ function TabNavigator() {
       })}
     >
       <Tab.Screen name="Home" component={HomeStack} />
+      <Tab.Screen name="Chat" component={ChatScreen} />
       <Tab.Screen 
         name="Analysis" 
         component={AnalysisStack}

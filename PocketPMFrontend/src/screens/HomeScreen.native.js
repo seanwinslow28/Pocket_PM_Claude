@@ -14,9 +14,12 @@ import {
   Alert,
   Animated,
   StatusBar,
+
 } from 'react-native';
+
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { BlurView } from 'expo-blur';
 import * as Animatable from 'react-native-animatable';
 import ApiService from '../services/api';
@@ -57,7 +60,8 @@ export default function HomeScreen({ navigation }) {
     '💡 New Idea',
     '📊 Market Analysis', 
     '🚀 Go-to-Market',
-    '📈 Growth Strategy'
+    '📈 Growth Strategy',
+    '💬 AI Chat'
   ];
 
   useEffect(() => {
@@ -223,6 +227,12 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleQuickPrompt = (prompt) => {
+    // Handle AI Chat navigation
+    if (prompt.includes('AI Chat')) {
+      navigation.navigate('Chat');
+      return;
+    }
+    
     setIdea(prompt);
   };
 
@@ -253,9 +263,19 @@ export default function HomeScreen({ navigation }) {
         key={message.id}
         animation="fadeInUp"
         delay={index * 200}
-        style={[styles.messageContainer, isUser ? styles.userMessageContainer : styles.aiMessageContainer]}
+        style={styles.messageContainer}
       >
-        {!isUser && (
+        {/* Always show avatar on the left */}
+        {isUser ? (
+          <View style={styles.userAvatar}>
+            <LinearGradient
+              colors={['#ff6b6b', '#4ecdc4']}
+              style={styles.avatarGradient}
+            >
+              <Text style={styles.avatarText}>U</Text>
+            </LinearGradient>
+          </View>
+        ) : (
           <View style={styles.aiAvatar}>
             <LinearGradient
               colors={['#4ecdc4', '#45b7d1']}
@@ -282,17 +302,6 @@ export default function HomeScreen({ navigation }) {
             </View>
           )}
         </View>
-
-        {isUser && (
-          <View style={styles.userAvatar}>
-            <LinearGradient
-              colors={['#ff6b6b', '#4ecdc4']}
-              style={styles.avatarGradient}
-            >
-              <Text style={styles.avatarText}>U</Text>
-            </LinearGradient>
-          </View>
-        )}
       </Animatable.View>
     );
   };
@@ -476,16 +485,16 @@ export default function HomeScreen({ navigation }) {
         >
           {/* Welcome Message - exact styling */}
           <View style={styles.welcomeContainer}>
-            <View style={styles.welcomeTitleContainer}>
-              <LinearGradient
-                colors={['#ff6b6b', '#4ecdc4']}
-                style={styles.welcomeTitleGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <Text style={styles.welcomeTitleText}>Your AI Product Strategist</Text>
-              </LinearGradient>
-            </View>
+            <LinearGradient
+              colors={['#ff6b6b', '#4ecdc4']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.welcomeTitleNativeGradient}
+            >
+              <Text style={styles.welcomeTitleNative}>
+                Your AI Product Strategist
+              </Text>
+            </LinearGradient>
             <Text style={styles.welcomeSubtitle}>
               Turn your ideas into actionable product roadmaps
             </Text>
@@ -682,19 +691,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-  welcomeTitleContainer: {
+  welcomeTitleNativeGradient: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 16,
     marginBottom: 8,
+    alignItems: 'center',
   },
-  welcomeTitleGradient: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  welcomeTitleText: {
+  welcomeTitleNative: {
     fontSize: 24,
     fontWeight: '700',
-    color: 'white',
     textAlign: 'center',
+    color: '#ffffff',
   },
   welcomeSubtitle: {
     fontSize: 16,
@@ -730,12 +738,6 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 20,
   },
-  userMessageContainer: {
-    flexDirection: 'row-reverse',
-  },
-  aiMessageContainer: {
-    flexDirection: 'row',
-  },
   aiAvatar: {
     width: 32,
     height: 32,
@@ -764,7 +766,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   userBubble: {
-    borderBottomRightRadius: 8,
+    borderBottomLeftRadius: 8,
   },
   aiBubble: {
     borderBottomLeftRadius: 8,
