@@ -2,30 +2,34 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
+  StatusBar,
   Animated,
   Alert,
   Dimensions
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { Ionicons } from '@expo/vector-icons';
-import * as Animatable from 'react-native-animatable';
 import ApiService from '../services/api';
 import StorageService from '../utils/storage';
-import { useTheme } from '../contexts/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
 const LoadingScreen = ({ route, navigation }) => {
-  const { colors, isDarkMode } = useTheme();
   const { idea } = route.params;
   
-  // Animation references
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  // Animation values
+  const logoGlow = useRef(new Animated.Value(0)).current;
+  const floatingShapes = useRef([
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+  ]).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
-  const pencilX = useRef(new Animated.Value(0)).current;
-  const pencilY = useRef(new Animated.Value(0)).current;
-  const pencilRotation = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(0)).current;
   
   const [loadingText, setLoadingText] = useState('Analyzing your idea...');
   const [progress, setProgress] = useState(0);
@@ -51,8 +55,58 @@ const LoadingScreen = ({ route, navigation }) => {
       useNativeDriver: true,
     }).start();
 
-    // Start pencil animation
-    startPencilAnimation();
+    // Logo glow animation
+    const logoAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(logoGlow, {
+          toValue: 1,
+          duration: 3000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(logoGlow, {
+          toValue: 0,
+          duration: 3000,
+          useNativeDriver: false,
+        }),
+      ])
+    );
+    logoAnimation.start();
+
+    // Floating shapes animation
+    floatingShapes.forEach((anim, index) => {
+      const floatingAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(anim, {
+            toValue: 1,
+            duration: 6000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(anim, {
+            toValue: 0,
+            duration: 6000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      setTimeout(() => floatingAnimation.start(), index * 2000);
+    });
+
+    // Pulse animation for loading indicator
+    const pulseAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulseAnimation.start();
     
     // Start progress animation
     startProgressAnimation();
@@ -77,91 +131,12 @@ const LoadingScreen = ({ route, navigation }) => {
     }, 3000);
 
     return () => {
+      logoAnimation.stop();
+      floatingShapes.forEach(anim => anim.stopAnimation());
+      pulseAnimation.stop();
       clearInterval(messageInterval);
     };
   }, []);
-
-  const startPencilAnimation = () => {
-    // Generate natural scribbling movement - just pencil motion, no actual drawing
-    const generateScribblingMotion = () => {
-      const centerX = 120;
-      const startY = 60;
-      const points = [];
-      
-      // Create natural scribbling movements across the paper
-      for (let i = 0; i < 20; i++) {
-        const x = 40 + Math.random() * 140; // Random X across paper width
-        const y = startY + (i * 8) + (Math.random() * 10 - 5); // Roughly descending with variation
-        const delay = i * 400 + Math.random() * 200; // Varied timing
-        
-        points.push({ x, y, delay });
-      }
-      
-      return points;
-    };
-
-    const scribblingPath = generateScribblingMotion();
-
-    // Animate pencil in natural scribbling motion
-    const animateScribbling = () => {
-      scribblingPath.forEach((point, index) => {
-        setTimeout(() => {
-          // Move pencil with natural writing motion
-          Animated.parallel([
-            Animated.timing(pencilX, {
-              toValue: point.x - 15,
-              duration: 300 + Math.random() * 200, // Varied speed
-              useNativeDriver: true,
-            }),
-            Animated.timing(pencilY, {
-              toValue: point.y - 15,
-              duration: 300 + Math.random() * 200,
-              useNativeDriver: true,
-            }),
-            Animated.timing(pencilRotation, {
-              toValue: -20 + Math.random() * 40, // Natural hand angle variation
-              duration: 250,
-              useNativeDriver: true,
-            })
-          ]).start();
-        }, point.delay);
-      });
-    };
-
-    // Start animation and loop it
-    animateScribbling();
-    
-    // Loop the animation every 10 seconds with new random path
-    const loopInterval = setInterval(() => {
-      // Generate new random scribbling path
-      const newPath = generateScribblingMotion();
-      
-      // Animate new path
-      newPath.forEach((point, index) => {
-        setTimeout(() => {
-          Animated.parallel([
-            Animated.timing(pencilX, {
-              toValue: point.x - 15,
-              duration: 300 + Math.random() * 200,
-              useNativeDriver: true,
-            }),
-            Animated.timing(pencilY, {
-              toValue: point.y - 15,
-              duration: 300 + Math.random() * 200,
-              useNativeDriver: true,
-            }),
-            Animated.timing(pencilRotation, {
-              toValue: -20 + Math.random() * 40,
-              duration: 250,
-              useNativeDriver: true,
-            })
-          ]).start();
-        }, point.delay);
-      });
-    }, 10000);
-
-    return () => clearInterval(loopInterval);
-  };
 
   const startProgressAnimation = () => {
     Animated.timing(progressAnim, {
@@ -197,7 +172,7 @@ const LoadingScreen = ({ route, navigation }) => {
         setLoadingText('✨ Analysis Complete!');
         setProgress(100);
         
-        // Auto-navigate after 1.5 seconds with slide animation
+        // Auto-navigate after 1.5 seconds
         setTimeout(() => {
           navigation.replace('AnalysisResults', {
             idea: idea,
@@ -229,210 +204,408 @@ const LoadingScreen = ({ route, navigation }) => {
     outputRange: ['0%', '100%'],
   });
 
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#f5f5f5' }]}>
-      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-        
-        {/* Paper and Pencil Animation */}
-        <View style={styles.paperContainer}>
-          {/* Paper */}
-          <View style={[styles.paper, { backgroundColor: isDarkMode ? colors.surface : '#ffffff' }]}>
-            {/* Red margin line */}
-            <View style={styles.marginLine} />
-            
-            {/* Blue horizontal lines */}
-            {Array.from({ length: 12 }).map((_, index) => (
-              <View key={index} style={[styles.horizontalLine, { top: 35 + index * 20, backgroundColor: isDarkMode ? colors.border : '#e3f2fd' }]} />
-            ))}
-            
-            {/* No actual drawing - just pencil motion */}
-          </View>
-          
-          {/* Animated Pencil */}
+  const renderLoadingDots = () => {
+    const dots = [useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current];
+    
+    useEffect(() => {
+      const animations = dots.map((dot, index) => 
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(dot, {
+              toValue: 1,
+              duration: 600,
+              useNativeDriver: true,
+            }),
+            Animated.timing(dot, {
+              toValue: 0,
+              duration: 600,
+              useNativeDriver: true,
+            }),
+          ])
+        )
+      );
+      
+      animations.forEach((anim, index) => {
+        setTimeout(() => anim.start(), index * 200);
+      });
+      
+      return () => animations.forEach(anim => anim.stop());
+    }, []);
+
+    return (
+      <View style={styles.loadingDots}>
+        {dots.map((dot, index) => (
           <Animated.View
+            key={index}
             style={[
-              styles.pencilContainer,
+              styles.loadingDot,
               {
-                transform: [
-                  { translateX: pencilX },
-                  { translateY: pencilY },
-                  { rotate: pencilRotation.interpolate({
-                    inputRange: [-30, 30],
-                    outputRange: ['-30deg', '30deg']
-                  })}
-                ]
+                opacity: dot,
+                transform: [{
+                  scale: dot.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.8, 1.2],
+                  })
+                }]
               }
             ]}
-          >
-            {/* Pencil Body */}
-            <View style={styles.pencil}>
-              {/* Pencil tip */}
-              <View style={styles.pencilTip} />
-              {/* Pencil wood */}
-              <View style={styles.pencilWood} />
-              {/* Pencil body */}
-              <View style={styles.pencilBody} />
-              {/* Pencil eraser ferrule */}
-              <View style={styles.pencilFerrule} />
-              {/* Pencil eraser */}
-              <View style={styles.pencilEraser} />
-            </View>
-          </Animated.View>
-        </View>
+          />
+        ))}
+      </View>
+    );
+  };
 
-        {/* Product Info */}
-        <View style={styles.ideaContainer}>
-          <Text style={[styles.ideaLabel, { color: isDarkMode ? colors.textSecondary : '#666' }]}>Analyzing:</Text>
-          <Text style={[styles.ideaName, { color: isDarkMode ? colors.text : '#2c3e50' }]}>{productName}</Text>
-        </View>
+  return (
+    <LinearGradient
+      colors={['#0a0a0a', '#1a1a1a']}
+      start={{x: 0, y: 0}}
+      end={{x: 1, y: 1}}
+      style={styles.container}
+    >
+      <StatusBar barStyle="light-content" />
+      
+      {/* Floating Background Elements */}
+      {floatingShapes.map((anim, index) => (
+        <Animated.View
+          key={index}
+          style={[
+            styles.floatingShape,
+            {
+              transform: [{
+                translateY: anim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -20],
+                }),
+              }, {
+                rotate: anim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0deg', '180deg'],
+                }),
+              }],
+            },
+            index === 0 && styles.floatingShape1,
+            index === 1 && styles.floatingShape2,
+            index === 2 && styles.floatingShape3,
+          ]}
+        />
+      ))}
 
-        {/* Loading Text */}
-        <Text style={[styles.loadingText, { color: isDarkMode ? colors.text : '#2c3e50' }]}>{loadingText}</Text>
-
-        {/* Progress Bar */}
-        <View style={styles.progressContainer}>
-          <View style={[styles.progressBar, { backgroundColor: isDarkMode ? colors.border : '#e9ecef' }]}>
-            <Animated.View
-              style={[
-                styles.progressFill,
-                { width: progressWidth, backgroundColor: colors.primary || '#ff6b6b' }
-              ]}
-            />
+      <SafeAreaView style={styles.safeArea}>
+        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+          
+          {/* Header with Logo */}
+          <View style={styles.header}>
+            <Animated.View style={[
+              styles.logo,
+              {
+                shadowColor: logoGlow.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['rgba(78, 205, 196, 0.5)', 'rgba(255, 107, 107, 0.8)'],
+                }),
+              }
+            ]}>
+              <LinearGradient
+                colors={['#ff6b6b', '#4ecdc4', '#45b7d1']}
+                start={{x: 0, y: 0}}
+                end={{x: 1, y: 1}}
+                style={styles.logoIcon}
+              >
+                <Text style={styles.logoIconText}>PM</Text>
+              </LinearGradient>
+              <Text style={styles.logoText}>Pocket PM</Text>
+            </Animated.View>
           </View>
-          <Text style={[styles.progressText, { color: isDarkMode ? colors.textSecondary : '#666' }]}>{progress}% Complete</Text>
-        </View>
 
-      </Animated.View>
-    </SafeAreaView>
+          {/* Main Content */}
+          <View style={styles.mainContent}>
+            
+            {/* AI Brain Animation */}
+            <Animated.View style={[
+              styles.brainContainer,
+              {
+                transform: [{
+                  scale: pulseAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [1, 1.1],
+                  })
+                }]
+              }
+            ]}>
+              <BlurView intensity={20} tint="dark" style={styles.brainBlur}>
+                <LinearGradient
+                  colors={['#ff6b6b', '#4ecdc4', '#45b7d1']}
+                  start={{x: 0, y: 0}}
+                  end={{x: 1, y: 1}}
+                  style={styles.brainGradient}
+                >
+                  <Ionicons name="bulb" size={60} color="white" />
+                </LinearGradient>
+                {renderLoadingDots()}
+              </BlurView>
+            </Animated.View>
+
+            {/* Product Info */}
+            <BlurView intensity={15} tint="dark" style={styles.ideaContainer}>
+              <Text style={styles.ideaLabel}>Analyzing:</Text>
+              <MaskedView
+                style={styles.ideaTitleContainer}
+                maskElement={
+                  <Text style={styles.ideaTitleMask}>
+                    {productName}
+                  </Text>
+                }
+              >
+                <LinearGradient
+                  colors={['#ff6b6b', '#4ecdc4']}
+                  start={{x: 0, y: 0}}
+                  end={{x: 1, y: 1}}
+                  style={styles.ideaTitleGradient}
+                />
+              </MaskedView>
+            </BlurView>
+
+            {/* Loading Text */}
+            <Text style={styles.loadingText}>{loadingText}</Text>
+
+            {/* Progress Bar */}
+            <BlurView intensity={15} tint="dark" style={styles.progressContainer}>
+              <View style={styles.progressBar}>
+                <Animated.View style={styles.progressBarBackground}>
+                  <LinearGradient
+                    colors={['#ff6b6b', '#4ecdc4']}
+                    start={{x: 0, y: 0}}
+                    end={{x: 1, y: 0}}
+                    style={[styles.progressFill, { width: progressWidth }]}
+                  />
+                </Animated.View>
+              </View>
+              <Text style={styles.progressText}>{progress}% Complete</Text>
+            </BlurView>
+
+            {/* Status Indicators */}
+            <View style={styles.statusContainer}>
+              {['Market Research', 'Competitive Analysis', 'Technical Assessment', 'Strategic Planning'].map((status, index) => (
+                <BlurView key={index} intensity={10} tint="dark" style={styles.statusItem}>
+                  <View style={[
+                    styles.statusIndicator,
+                    { backgroundColor: progress > (index + 1) * 25 ? '#4ecdc4' : 'rgba(255,255,255,0.3)' }
+                  ]} />
+                  <Text style={[
+                    styles.statusText,
+                    { color: progress > (index + 1) * 25 ? '#4ecdc4' : 'rgba(255,255,255,0.6)' }
+                  ]}>
+                    {status}
+                  </Text>
+                  {progress > (index + 1) * 25 && (
+                    <Ionicons name="checkmark-circle" size={16} color="#4ecdc4" />
+                  )}
+                </BlurView>
+              ))}
+            </View>
+
+          </View>
+        </Animated.View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 };
 
-const styles = StyleSheet.create({
+const styles = {
   container: {
+    flex: 1,
+  },
+  safeArea: {
     flex: 1,
   },
   content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
   },
-  paperContainer: {
-    position: 'relative',
-    marginBottom: 50,
-  },
-  paper: {
-    width: 240,
-    height: 300,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  marginLine: {
+  // Floating background elements
+  floatingShape: {
     position: 'absolute',
-    left: 25,
-    top: 0,
-    bottom: 0,
-    width: 2,
+    opacity: 0.1,
+  },
+  floatingShape1: {
+    top: '15%',
+    left: '10%',
+    width: 60,
+    height: 60,
     backgroundColor: '#ff6b6b',
+    borderRadius: 30,
   },
-  horizontalLine: {
-    position: 'absolute',
-    left: 35,
-    right: 15,
-    height: 1,
+  floatingShape2: {
+    top: '60%',
+    right: '15%',
+    width: 40,
+    height: 40,
+    backgroundColor: '#4ecdc4',
+    borderRadius: 8,
   },
-  pencilContainer: {
-    position: 'absolute',
-    top: 50,
-    left: 50,
+  floatingShape3: {
+    bottom: '20%',
+    left: '20%',
     width: 80,
-    height: 20,
-    zIndex: 10,
+    height: 80,
+    backgroundColor: '#45b7d1',
+    borderRadius: 40,
   },
-  pencil: {
+  // Header
+  header: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logo: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 12,
+    gap: 12,
   },
-  pencilTip: {
-    width: 8,
-    height: 8,
-    backgroundColor: '#2c3e50',
-    borderTopLeftRadius: 4,
-    borderBottomLeftRadius: 4,
-    transform: [{ scaleX: 1.5 }],
-  },
-  pencilWood: {
-    width: 4,
-    height: 10,
-    backgroundColor: '#d4af37',
-  },
-  pencilBody: {
-    width: 50,
-    height: 12,
-    backgroundColor: '#ffd700',
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#e6c200',
-  },
-  pencilFerrule: {
-    width: 8,
-    height: 12,
-    backgroundColor: '#c0392b',
-  },
-  pencilEraser: {
-    width: 6,
-    height: 10,
-    backgroundColor: '#ff69b4',
-    borderTopRightRadius: 3,
-    borderBottomRightRadius: 3,
-  },
-  ideaContainer: {
+  logoIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 30,
+  },
+  logoIconText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 20,
+  },
+  logoText: {
+    color: 'white',
+    fontSize: 28,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
+  // Main Content
+  mainContent: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 24,
+  },
+  // Brain Animation
+  brainContainer: {
+    marginBottom: 20,
+  },
+  brainBlur: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  brainGradient: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  loadingDots: {
+    position: 'absolute',
+    bottom: 15,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  loadingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+  },
+  // Product Info
+  ideaContainer: {
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    minWidth: 280,
   },
   ideaLabel: {
+    color: 'rgba(255,255,255,0.7)',
     fontSize: 16,
     marginBottom: 8,
   },
-  ideaName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
+  ideaTitleContainer: {
+    height: 32,
   },
+  ideaTitleMask: {
+    fontSize: 24,
+    fontWeight: '700',
+    textAlign: 'center',
+    backgroundColor: 'transparent',
+  },
+  ideaTitleGradient: {
+    flex: 1,
+  },
+  // Loading Text
   loadingText: {
+    color: 'white',
     fontSize: 18,
     textAlign: 'center',
-    marginBottom: 30,
-    minHeight: 25,
     fontWeight: '500',
+    minHeight: 25,
   },
+  // Progress
   progressContainer: {
     width: '100%',
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
-    marginBottom: 20,
   },
   progressBar: {
     width: '100%',
+    marginBottom: 12,
+  },
+  progressBarBackground: {
+    width: '100%',
     height: 8,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 4,
     overflow: 'hidden',
-    marginBottom: 12,
   },
   progressFill: {
     height: '100%',
     borderRadius: 4,
   },
   progressText: {
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },
-});
+  // Status Indicators
+  statusContainer: {
+    width: '100%',
+    gap: 8,
+  },
+  statusItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    gap: 12,
+  },
+  statusIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+};
 
 export default LoadingScreen; 

@@ -1,26 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
-  StyleSheet,
-  ScrollView,
-  SafeAreaView,
+  Text,
   TextInput,
   TouchableOpacity,
-  Text,
-  Alert,
+  StatusBar,
+  Animated,
+  Dimensions,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { Ionicons } from '@expo/vector-icons';
-import * as Animatable from 'react-native-animatable';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
+
+const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen({ navigation }) {
-  const { colors, styles: themeStyles, isDarkMode } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { signIn, loading } = useAuth();
+  
+  // Animation values
+  const logoGlow = useRef(new Animated.Value(0)).current;
+  const floatingShapes = useRef([
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+  ]).current;
+
+  useEffect(() => {
+    // Logo glow animation
+    const logoAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(logoGlow, {
+          toValue: 1,
+          duration: 3000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(logoGlow, {
+          toValue: 0,
+          duration: 3000,
+          useNativeDriver: false,
+        }),
+      ])
+    );
+    logoAnimation.start();
+
+    // Floating shapes animation
+    floatingShapes.forEach((anim, index) => {
+      const floatingAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(anim, {
+            toValue: 1,
+            duration: 6000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(anim, {
+            toValue: 0,
+            duration: 6000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      setTimeout(() => floatingAnimation.start(), index * 2000);
+    });
+
+    return () => {
+      logoAnimation.stop();
+      floatingShapes.forEach(anim => anim.stopAnimation());
+    };
+  }, []);
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -44,380 +98,408 @@ export default function LoginScreen({ navigation }) {
   const isButtonDisabled = !email.trim() || !password.trim() || loading;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#FFFFFF' }]}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContainer}
-          showsVerticalScrollIndicator={false}
+    <LinearGradient
+      colors={['#0a0a0a', '#1a1a1a']}
+      start={{x: 0, y: 0}}
+      end={{x: 1, y: 1}}
+      style={styles.container}
+    >
+      <StatusBar barStyle="light-content" />
+      
+      {/* Floating Background Elements */}
+      {floatingShapes.map((anim, index) => (
+        <Animated.View
+          key={index}
+          style={[
+            styles.floatingShape,
+            {
+              transform: [{
+                translateY: anim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -20],
+                }),
+              }, {
+                rotate: anim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0deg', '180deg'],
+                }),
+              }],
+            },
+            index === 0 && styles.floatingShape1,
+            index === 1 && styles.floatingShape2,
+            index === 2 && styles.floatingShape3,
+          ]}
+        />
+      ))}
+
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView 
+          style={styles.keyboardView}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          {/* Header */}
-          <Animatable.View animation="fadeInDown" duration={800} delay={200}>
-            <View style={styles.header}>
-              <View style={styles.logoContainer}>
-                <View style={[styles.logo, { backgroundColor: '#7B68EE' }]}>
-                  <Ionicons name="create" size={32} color="#ffffff" />
-                  <View style={styles.sparkles}>
-                    <Ionicons name="sparkles" size={16} color="#ffffff" />
-                  </View>
-                </View>
-              </View>
-              <Text style={[styles.headerTitle, { color: isDarkMode ? colors.text : '#000000' }]}>Pocket PM</Text>
-              <Text style={[styles.headerSubtitle, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
-                From Idea → Execution → Launch
-              </Text>
-            </View>
-          </Animatable.View>
+          {/* Header with Logo */}
+          <View style={styles.header}>
+            <Animated.View style={[
+              styles.logo,
+              {
+                shadowColor: logoGlow.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['rgba(78, 205, 196, 0.5)', 'rgba(255, 107, 107, 0.8)'],
+                }),
+              }
+            ]}>
+              <LinearGradient
+                colors={['#ff6b6b', '#4ecdc4', '#45b7d1']}
+                start={{x: 0, y: 0}}
+                end={{x: 1, y: 1}}
+                style={styles.logoIcon}
+              >
+                <Text style={styles.logoIconText}>PM</Text>
+              </LinearGradient>
+              <Text style={styles.logoText}>Pocket PM</Text>
+            </Animated.View>
+          </View>
 
           {/* Main Content */}
           <View style={styles.mainContent}>
-            {/* Welcome Card */}
-            <Animatable.View animation="fadeInUp" duration={800} delay={400}>
-              <View style={[
-                styles.welcomeCard, 
-                { 
-                  backgroundColor: isDarkMode ? colors.surface : '#FFFFFF',
-                  shadowColor: '#7B68EE',
-                  shadowOffset: { width: 0, height: 6 },
-                  shadowOpacity: 0.18,
-                  shadowRadius: 16,
-                  elevation: 10,
+            {/* Welcome Section */}
+            <View style={styles.welcomeContainer}>
+              <MaskedView
+                style={styles.welcomeTitleContainer}
+                maskElement={
+                  <Text style={styles.welcomeTitleMask}>
+                    Welcome Back
+                  </Text>
                 }
-              ]}>
-                <Text style={[styles.welcomeTitle, { color: isDarkMode ? colors.text : '#000000' }]}>Welcome Back</Text>
-                <Text style={[styles.welcomeSubtitle, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
-                  Sign in to analyze your next big idea
-                </Text>
+              >
+                <LinearGradient
+                  colors={['#ff6b6b', '#4ecdc4']}
+                  start={{x: 0, y: 0}}
+                  end={{x: 1, y: 1}}
+                  style={styles.welcomeTitleGradient}
+                />
+              </MaskedView>
+              <Text style={styles.welcomeSubtitle}>
+                Sign in to analyze your next big idea
+              </Text>
+            </View>
 
-                <View style={styles.form}>
-                  <View style={styles.inputGroup}>
-                    <Text style={[styles.inputLabel, { color: isDarkMode ? colors.text : '#000000' }]}>Email</Text>
+            {/* Login Form */}
+            <BlurView intensity={20} tint="dark" style={styles.formContainer}>
+              <View style={styles.form}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Email</Text>
+                  <BlurView intensity={10} tint="dark" style={styles.inputWrapper}>
                     <TextInput
-                      style={[
-                        styles.textInput,
-                        {
-                          backgroundColor: isDarkMode ? colors.input : '#FFFFFF',
-                          borderColor: isDarkMode ? colors.border : '#D3D3D3',
-                          color: isDarkMode ? colors.text : '#000000'
-                        }
-                      ]}
+                      style={styles.textInput}
                       value={email}
                       onChangeText={setEmail}
                       placeholder="Enter your email"
-                      placeholderTextColor={isDarkMode ? colors.placeholder : '#9ca3af'}
+                      placeholderTextColor="rgba(255,255,255,0.5)"
                       keyboardType="email-address"
                       autoCapitalize="none"
                       editable={!loading}
                     />
-                  </View>
+                  </BlurView>
+                </View>
 
-                  <View style={styles.inputGroup}>
-                    <Text style={[styles.inputLabel, { color: isDarkMode ? colors.text : '#000000' }]}>Password</Text>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Password</Text>
+                  <BlurView intensity={10} tint="dark" style={styles.inputWrapper}>
                     <TextInput
-                      style={[
-                        styles.textInput,
-                        {
-                          backgroundColor: isDarkMode ? colors.input : '#FFFFFF',
-                          borderColor: isDarkMode ? colors.border : '#D3D3D3',
-                          color: isDarkMode ? colors.text : '#000000'
-                        }
-                      ]}
+                      style={styles.textInput}
                       value={password}
                       onChangeText={setPassword}
                       placeholder="Enter your password"
-                      placeholderTextColor={isDarkMode ? colors.placeholder : '#9ca3af'}
+                      placeholderTextColor="rgba(255,255,255,0.5)"
                       secureTextEntry
                       editable={!loading}
                     />
-                  </View>
+                  </BlurView>
+                </View>
 
-                  <TouchableOpacity
-                    style={[
-                      styles.loginButton,
-                      {
-                        opacity: isButtonDisabled ? 0.5 : 1,
-                        backgroundColor: isButtonDisabled ? '#9B9BEE' : '#7B68EE',
-                        shadowColor: '#7B68EE',
-                        shadowOffset: { width: 0, height: 6 },
-                        shadowOpacity: isButtonDisabled ? 0.1 : 0.25,
-                        shadowRadius: 16,
-                        elevation: isButtonDisabled ? 4 : 12,
-                      }
-                    ]}
-                    onPress={handleLogin}
-                    disabled={isButtonDisabled}
-                    activeOpacity={isButtonDisabled ? 1 : 0.8}
+                <TouchableOpacity
+                  style={[styles.loginButton, { opacity: isButtonDisabled ? 0.5 : 1 }]}
+                  onPress={handleLogin}
+                  disabled={isButtonDisabled}
+                >
+                  <LinearGradient
+                    colors={['#ff6b6b', '#4ecdc4']}
+                    start={{x: 0, y: 0}}
+                    end={{x: 1, y: 1}}
+                    style={styles.loginButtonGradient}
                   >
                     {loading ? (
                       <>
-                        <Ionicons name="refresh" size={20} color="#ffffff" style={styles.rotating} />
+                        <Ionicons name="refresh" size={20} color="white" />
                         <Text style={styles.loginButtonText}>Signing In...</Text>
                       </>
                     ) : (
                       <>
-                        <Ionicons name="log-in" size={20} color="#ffffff" />
+                        <Ionicons name="log-in" size={20} color="white" />
                         <Text style={styles.loginButtonText}>Sign In</Text>
                       </>
                     )}
-                  </TouchableOpacity>
+                  </LinearGradient>
+                </TouchableOpacity>
 
-                  <View style={styles.divider}>
-                    <View style={[styles.dividerLine, { backgroundColor: isDarkMode ? colors.border : '#D3D3D3' }]} />
-                    <Text style={[styles.dividerText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>or</Text>
-                    <View style={[styles.dividerLine, { backgroundColor: isDarkMode ? colors.border : '#D3D3D3' }]} />
-                  </View>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.registerButton,
-                      {
-                        borderColor: isDarkMode ? colors.border : '#D3D3D3',
-                        backgroundColor: isDarkMode ? 'transparent' : '#FFFFFF',
-                        shadowColor: '#7B68EE',
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.15,
-                        shadowRadius: 12,
-                        elevation: 8,
-                      }
-                    ]}
-                    onPress={() => navigation.navigate('Register')}
-                    disabled={loading}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="person-add" size={20} color={isDarkMode ? colors.text : '#666666'} />
-                    <Text style={[styles.registerButtonText, { color: isDarkMode ? colors.text : '#666666' }]}>
-                      Create New Account
-                    </Text>
-                  </TouchableOpacity>
+                <View style={styles.divider}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>or</Text>
+                  <View style={styles.dividerLine} />
                 </View>
+
+                <TouchableOpacity
+                  style={styles.registerButton}
+                  onPress={() => navigation.navigate('Register')}
+                  disabled={loading}
+                >
+                  <BlurView intensity={15} tint="dark" style={styles.registerButtonBlur}>
+                    <Ionicons name="person-add" size={20} color="rgba(255,255,255,0.8)" />
+                    <Text style={styles.registerButtonText}>Create New Account</Text>
+                  </BlurView>
+                </TouchableOpacity>
               </View>
-            </Animatable.View>
+            </BlurView>
 
             {/* Demo Info */}
-            <Animatable.View animation="fadeInUp" duration={800} delay={600}>
-              <View style={[
-                styles.demoCard, 
-                { 
-                  backgroundColor: isDarkMode ? colors.surface : '#FFFFFF',
-                  shadowColor: '#7B68EE',
-                  shadowOffset: { width: 0, height: 3 },
-                  shadowOpacity: 0.12,
-                  shadowRadius: 8,
-                  elevation: 5,
-                }
-              ]}>
-                <View style={styles.demoHeader}>
-                  <Ionicons name="information-circle" size={20} color="#7B68EE" />
-                  <Text style={[styles.demoTitle, { color: isDarkMode ? colors.text : '#000000' }]}>Demo Account</Text>
-                </View>
-                <Text style={[styles.demoText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
-                  Create a real account to get started with Supabase authentication and save your analyses.
-                </Text>
+            <BlurView intensity={15} tint="dark" style={styles.demoCard}>
+              <View style={styles.demoHeader}>
+                <Ionicons name="information-circle" size={20} color="#4ecdc4" />
+                <Text style={styles.demoTitle}>Demo Account</Text>
               </View>
-            </Animatable.View>
+              <Text style={styles.demoText}>
+                Create a real account to get started with Supabase authentication and save your analyses.
+              </Text>
+            </BlurView>
           </View>
 
           {/* Footer */}
-          <Animatable.View animation="fadeIn" duration={800} delay={800}>
-            <View style={styles.footer}>
-              <Text style={[styles.footerText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
-                Powered by OpenAI • Made with <Text style={styles.heart}>❤️</Text> for Product Innovators
-              </Text>
-            </View>
-          </Animatable.View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Powered by OpenAI • Made with <Text style={styles.heart}>❤️</Text> for Product Innovators
+            </Text>
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = {
   container: {
+    flex: 1,
+  },
+  safeArea: {
     flex: 1,
   },
   keyboardView: {
     flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContainer: {
-    flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24, // 1.5rem
-    paddingVertical: 48, // 3rem
+    paddingHorizontal: 24,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: 64, // 4rem
+  // Floating background elements
+  floatingShape: {
+    position: 'absolute',
+    opacity: 0.1,
   },
-  logoContainer: {
-    position: 'relative',
-    marginBottom: 24, // 1.5rem
+  floatingShape1: {
+    top: '15%',
+    left: '10%',
+    width: 60,
+    height: 60,
+    backgroundColor: '#ff6b6b',
+    borderRadius: 30,
   },
-  logo: {
+  floatingShape2: {
+    top: '60%',
+    right: '15%',
+    width: 40,
+    height: 40,
+    backgroundColor: '#4ecdc4',
+    borderRadius: 8,
+  },
+  floatingShape3: {
+    bottom: '20%',
+    left: '20%',
     width: 80,
     height: 80,
-    backgroundColor: '#ef4444',
+    backgroundColor: '#45b7d1',
     borderRadius: 40,
+  },
+  // Header
+  header: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  logoIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
   },
-  sparkles: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
+  logoIconText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 20,
   },
-  headerTitle: {
-    fontSize: 32, // 2rem
+  logoText: {
+    color: 'white',
+    fontSize: 28,
     fontWeight: '700',
-    fontFamily: 'System',
-    textAlign: 'center',
-    marginBottom: 8,
+    letterSpacing: -0.5,
   },
-  headerSubtitle: {
-    fontSize: 16, // 1rem
-    fontWeight: '400',
-    fontFamily: 'System',
-    textAlign: 'center',
-  },
+  // Main Content
   mainContent: {
-    maxWidth: 400, // Smaller than main screens for login focus
+    maxWidth: 400,
     width: '100%',
     alignSelf: 'center',
   },
-  welcomeCard: {
-    padding: 32, // 2rem
-    borderRadius: 16,
-    marginBottom: 24, // 1.5rem
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  welcomeContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
   },
-  welcomeTitle: {
-    fontSize: 28, // 1.75rem
-    fontWeight: '700',
-    fontFamily: 'System',
-    textAlign: 'center',
+  welcomeTitleContainer: {
+    height: 40,
     marginBottom: 8,
   },
-  welcomeSubtitle: {
-    fontSize: 16, // 1rem
-    fontWeight: '400',
-    fontFamily: 'System',
+  welcomeTitleMask: {
+    fontSize: 28,
+    fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 32, // 2rem
+    backgroundColor: 'transparent',
+  },
+  welcomeTitleGradient: {
+    flex: 1,
+  },
+  welcomeSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.7)',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  // Form
+  formContainer: {
+    padding: 24,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    marginBottom: 20,
   },
   form: {
-    gap: 24, // 1.5rem
+    gap: 20,
   },
   inputGroup: {
-    gap: 8, // 0.5rem
+    gap: 8,
   },
   inputLabel: {
-    fontSize: 16, // 1rem
+    color: 'white',
+    fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'System',
+  },
+  inputWrapper: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    overflow: 'hidden',
   },
   textInput: {
-    padding: 16, // 1rem
-    fontSize: 16, // 1rem
-    borderWidth: 1,
-    borderRadius: 12, // 0.75rem
-    fontFamily: 'System',
+    padding: 16,
+    color: 'white',
+    fontSize: 16,
   },
   loginButton: {
+    marginTop: 8,
+  },
+  loginButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8, // 0.5rem
-    paddingVertical: 16, // 1rem
-    paddingHorizontal: 24, // 1.5rem
-    borderRadius: 12, // 0.75rem
-    marginTop: 8,
-  },
-  rotating: {
-    // Add rotation animation here if needed
+    gap: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
   },
   loginButtonText: {
-    color: '#ffffff',
-    fontSize: 18, // 1.125rem
+    color: 'white',
+    fontSize: 18,
     fontWeight: '600',
-    fontFamily: 'System',
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16, // 1rem
+    gap: 16,
     marginVertical: 8,
   },
   dividerLine: {
     flex: 1,
     height: 1,
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
   dividerText: {
-    fontSize: 14, // 0.875rem
-    fontFamily: 'System',
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 14,
   },
   registerButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  registerButtonBlur: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8, // 0.5rem
-    paddingVertical: 16, // 1rem
-    paddingHorizontal: 24, // 1.5rem
-    borderRadius: 12, // 0.75rem
+    gap: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
     borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   registerButtonText: {
-    fontSize: 16, // 1rem
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 16,
     fontWeight: '500',
-    fontFamily: 'System',
   },
+  // Demo Card
   demoCard: {
-    padding: 20,
+    padding: 16,
     borderRadius: 16,
-    marginBottom: 24, // 1.5rem
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    borderLeftWidth: 4,
-    borderLeftColor: '#ef4444',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    marginBottom: 20,
   },
   demoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8, // 0.5rem
+    gap: 8,
     marginBottom: 8,
   },
   demoTitle: {
-    fontSize: 16, // 1rem
+    color: 'white',
+    fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'System',
   },
   demoText: {
-    fontSize: 14, // 0.875rem
-    fontFamily: 'System',
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 14,
     lineHeight: 20,
   },
+  // Footer
   footer: {
     alignItems: 'center',
-    marginTop: 32, // 2rem
+    marginTop: 32,
   },
   footerText: {
-    fontSize: 14, // 0.875rem
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 14,
     textAlign: 'center',
-    fontFamily: 'System',
   },
   heart: {
-    color: '#ef4444',
+    color: '#ff6b6b',
   },
-});
+};

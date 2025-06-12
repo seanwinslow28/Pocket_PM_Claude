@@ -10,10 +10,8 @@ import { Ionicons } from '@expo/vector-icons';
 // Import screens
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
-import HomeScreen from './src/screens/HomeScreen';
 import LoadingScreen from './src/screens/LoadingScreen';
 import AnalysisScreen from './src/screens/AnalysisScreen';
-import DeepAnalysisScreen from './src/screens/DeepAnalysisScreen';
 import LaunchScreen from './src/screens/LaunchScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
@@ -40,7 +38,7 @@ const theme = {
   },
 };
 
-// Stack Navigator for Home flow (Home -> Loading -> Analysis Results -> Deep Dive -> Launch -> Chat)
+// Stack Navigator for Home flow (Chat -> Loading -> Analysis Results -> Launch)
 function HomeStack() {
   return (
     <Stack.Navigator
@@ -48,12 +46,10 @@ function HomeStack() {
         headerShown: false,
       }}
     >
-      <Stack.Screen name="HomeMain" component={HomeScreen} />
+      <Stack.Screen name="HomeMain" component={ChatScreen} />
       <Stack.Screen name="Loading" component={LoadingScreen} />
       <Stack.Screen name="AnalysisResults" component={AnalysisScreen} />
-      <Stack.Screen name="DeepDive" component={DeepAnalysisScreen} />
       <Stack.Screen name="Launch" component={LaunchScreen} />
-      <Stack.Screen name="Chat" component={ChatScreen} />
     </Stack.Navigator>
   );
 }
@@ -66,7 +62,7 @@ function AnalysisStack() {
         headerShown: false,
       }}
     >
-      <Stack.Screen name="AnalysisMain" component={DeepAnalysisScreen} />
+      <Stack.Screen name="AnalysisMain" component={AnalysisScreen} />
     </Stack.Navigator>
   );
 }
@@ -115,7 +111,7 @@ function TabNavigator() {
       <Tab.Screen 
         name="Analysis" 
         component={AnalysisStack}
-        options={{ title: 'Deep Analysis' }}
+        options={{ title: 'Analysis' }}
       />
       <Tab.Screen name="Profile" component={ProfileStack} />
     </Tab.Navigator>

@@ -156,31 +156,12 @@ const ChatScreen = ({ navigation, route }) => {
   };
 
   const renderMessage = (message) => {
-    const messageAnim = useRef(new Animated.Value(0)).current;
-    
-    useEffect(() => {
-      Animated.timing(messageAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }).start();
-    }, []);
-
     return (
-      <Animated.View
+      <View
         key={message.id}
         style={[
           styles.messageContainer,
           message.isUser ? styles.userMessage : styles.aiMessage,
-          {
-            opacity: messageAnim,
-            transform: [{
-              translateY: messageAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [20, 0],
-              })
-            }]
-          }
         ]}
       >
         <View style={[
@@ -226,38 +207,11 @@ const ChatScreen = ({ navigation, route }) => {
             </BlurView>
           )}
         </View>
-      </Animated.View>
+      </View>
     );
   };
 
   const renderTypingIndicator = () => {
-    const dots = [useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current];
-    
-    useEffect(() => {
-      const animations = dots.map((dot, index) => 
-        Animated.loop(
-          Animated.sequence([
-            Animated.timing(dot, {
-              toValue: 1,
-              duration: 600,
-              useNativeDriver: true,
-            }),
-            Animated.timing(dot, {
-              toValue: 0,
-              duration: 600,
-              useNativeDriver: true,
-            }),
-          ])
-        )
-      );
-      
-      animations.forEach((anim, index) => {
-        setTimeout(() => anim.start(), index * 200);
-      });
-      
-      return () => animations.forEach(anim => anim.stop());
-    }, []);
-
     if (!isTyping) return null;
 
     return (
@@ -267,23 +221,9 @@ const ChatScreen = ({ navigation, route }) => {
         </View>
         <BlurView intensity={20} tint="dark" style={styles.typingIndicator}>
           <View style={styles.typingDots}>
-            {dots.map((dot, index) => (
-              <Animated.View
-                key={index}
-                style={[
-                  styles.typingDot,
-                  {
-                    opacity: dot,
-                    transform: [{
-                      scale: dot.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.8, 1],
-                      })
-                    }]
-                  }
-                ]}
-              />
-            ))}
+            <View style={styles.typingDot} />
+            <View style={styles.typingDot} />
+            <View style={styles.typingDot} />
           </View>
         </BlurView>
       </View>
@@ -525,21 +465,17 @@ const styles = {
     marginBottom: 20,
   },
   welcomeTitleContainer: {
-    height: 40,
+    height: 35,
     marginBottom: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   welcomeTitleMask: {
     fontSize: 24,
     fontWeight: '700',
     textAlign: 'center',
-    color: 'black',
     backgroundColor: 'transparent',
   },
   welcomeTitleGradient: {
     flex: 1,
-    width: '100%',
   },
   welcomeSubtitle: {
     fontSize: 16,

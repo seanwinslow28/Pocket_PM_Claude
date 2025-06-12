@@ -1,20 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
-  StyleSheet,
   Alert,
-  SafeAreaView,
   ActivityIndicator,
   TextInput,
   Share,
   Dimensions,
-  RefreshControl
+  RefreshControl,
+  StatusBar,
+  Animated,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { Ionicons } from '@expo/vector-icons';
-import * as Animatable from 'react-native-animatable';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../contexts/ThemeContext';
 import ApiService from '../services/api';
@@ -51,12 +54,69 @@ const ProfileScreen = ({ navigation }) => {
   const [company, setCompany] = useState('');
   const [role, setRole] = useState('');
 
+  // Animation values
+  const logoGlow = useRef(new Animated.Value(0)).current;
+  const floatingShapes = useRef([
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+  ]).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     getProfile();
     getAnalysisStats();
     getFavoriteAnalyses();
     getMonthlyChartData();
     loadStats();
+
+    // Start entrance animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+
+    // Logo glow animation
+    const logoAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(logoGlow, {
+          toValue: 1,
+          duration: 3000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(logoGlow, {
+          toValue: 0,
+          duration: 3000,
+          useNativeDriver: false,
+        }),
+      ])
+    );
+    logoAnimation.start();
+
+    // Floating shapes animation
+    floatingShapes.forEach((anim, index) => {
+      const floatingAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(anim, {
+            toValue: 1,
+            duration: 6000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(anim, {
+            toValue: 0,
+            duration: 6000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      setTimeout(() => floatingAnimation.start(), index * 2000);
+    });
+
+    return () => {
+      logoAnimation.stop();
+      floatingShapes.forEach(anim => anim.stopAnimation());
+    };
   }, []);
 
   const getProfile = async () => {
@@ -199,7 +259,7 @@ const ProfileScreen = ({ navigation }) => {
         setFavoriteAnalyses(data || []);
       }
     } catch (error) {
-      console.error('Error fetching favorites:', error);
+      console.error('Error fetching favorite analyses:', error);
     }
   };
 
@@ -224,35 +284,36 @@ const ProfileScreen = ({ navigation }) => {
       if (user) {
         const { data: analyses } = await supabase
           .from('product_analyses')
-          .select('product_name, analysis_type, created_at, ai_analysis')
+          .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
         if (analyses && analyses.length > 0) {
-          let exportText = `📊 AI Product Analysis Export\n`;
-          exportText += `User: ${user.email}\n`;
-          exportText += `Export Date: ${new Date().toLocaleDateString()}\n`;
-          exportText += `Total Analyses: ${analyses.length}\n\n`;
+          const exportData = analyses.map(analysis => ({
+            product: analysis.product_name,
+            type: analysis.analysis_type,
+            created: new Date(analysis.created_at).toLocaleDateString(),
+            analysis: analysis.analysis_result
+          }));
 
-          analyses.forEach((analysis, index) => {
-            exportText += `--- Analysis ${index + 1} ---\n`;
-            exportText += `Product: ${analysis.product_name}\n`;
-            exportText += `Type: ${analysis.analysis_type}\n`;
-            exportText += `Date: ${new Date(analysis.created_at).toLocaleDateString()}\n\n`;
-            exportText += `Analysis:\n${analysis.ai_analysis?.content || 'No content'}\n\n`;
-          });
+          const csvContent = [
+            'Product,Type,Created,Analysis',
+            ...exportData.map(row => 
+              `"${row.product}","${row.type}","${row.created}","${row.analysis.replace(/"/g, '""')}"`
+            )
+          ].join('\n');
 
           await Share.share({
-            message: exportText,
-            title: 'My Product Analyses'
+            message: csvContent,
+            title: 'Product Analyses Export'
           });
         } else {
-          Alert.alert('No Data', 'You have no analyses to export yet.');
+          Alert.alert('No Data', 'No analyses found to export.');
         }
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to export analyses');
-      console.error('Export error:', error);
+      console.error('Error exporting analyses:', error);
+      Alert.alert('Export Failed', 'Unable to export analyses.');
     }
   };
 
@@ -272,21 +333,15 @@ const ProfileScreen = ({ navigation }) => {
         .eq('id', user.id);
 
       if (error) {
-        throw error;
+        Alert.alert('Update Failed', error.message);
+      } else {
+        setIsEditing(false);
+        getProfile();
+        Alert.alert('Success', 'Profile updated successfully!');
       }
-
-      setProfile({
-        ...profile,
-        display_name: displayName,
-        company: company,
-        role: role
-      });
-
-      setIsEditing(false);
-      Alert.alert('Success', 'Profile updated successfully!');
     } catch (error) {
-      Alert.alert('Error', 'Failed to update profile');
-      console.error('Profile update error:', error);
+      console.error('Error updating profile:', error);
+      Alert.alert('Update Failed', 'Unable to update profile.');
     } finally {
       setUpdating(false);
     }
@@ -298,15 +353,18 @@ const ProfileScreen = ({ navigation }) => {
       'Are you sure you want to sign out?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Sign Out', 
+        {
+          text: 'Sign Out',
           style: 'destructive',
           onPress: async () => {
             try {
-              await ApiService.signOut();
-              // Navigate to auth screen or handle sign out
+              await supabase.auth.signOut();
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
             } catch (error) {
-              console.error('Sign out failed:', error);
+              console.error('Error signing out:', error);
             }
           }
         }
@@ -315,61 +373,70 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const loadStats = async () => {
-    const history = await StorageService.getAnalysisHistory();
-    const now = new Date();
-    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: analyses } = await supabase
+          .from('product_analyses')
+          .select('created_at')
+          .eq('user_id', user.id);
 
-    const thisWeek = history.filter(item => 
-      new Date(item.timestamp) >= startOfWeek
-    ).length;
+        if (analyses) {
+          const now = new Date();
+          const thisWeek = analyses.filter(a => {
+            const date = new Date(a.created_at);
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            return date >= weekAgo;
+          }).length;
 
-    const thisMonth = history.filter(item => 
-      new Date(item.timestamp) >= startOfMonth
-    ).length;
+          const thisMonth = analyses.filter(a => {
+            const date = new Date(a.created_at);
+            return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+          }).length;
 
-    setStats({
-      totalAnalyses: history.length,
-      thisMonth,
-      thisWeek,
-      avgPerWeek: Math.round(history.length / 4) // Approximate
-    });
+          setStats({
+            totalAnalyses: analyses.length,
+            thisMonth,
+            thisWeek,
+            avgPerWeek: analyses.length > 0 ? Math.round(analyses.length / 4) : 0
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await getProfile();
-    await getAnalysisStats();
-    await getFavoriteAnalyses();
-    await getMonthlyChartData();
-    await loadStats();
+    await Promise.all([
+      getProfile(),
+      getAnalysisStats(),
+      getFavoriteAnalyses(),
+      getMonthlyChartData(),
+      loadStats()
+    ]);
     setRefreshing(false);
   };
 
-  // Simple Bar Chart Component
   const SimpleBarChart = ({ data }) => {
-    const maxValue = Math.max(...data.map(d => d.count));
-    const chartHeight = 120;
-
+    const maxCount = Math.max(...data.map(d => d.count), 1);
+    
     return (
       <View style={styles.chartContainer}>
-        <Text style={[styles.chartTitle, themeStyles.text]}>📈 Monthly Analysis Trend</Text>
-        <View style={styles.chart}>
+        <View style={styles.chartBars}>
           {data.map((item, index) => (
-            <View key={index} style={styles.chartBar}>
-              <View style={styles.barContainer}>
-                <View
+            <View key={index} style={styles.chartBarContainer}>
+              <View style={styles.chartBarWrapper}>
+                <LinearGradient
+                  colors={['#ff6b6b', '#4ecdc4']}
                   style={[
-                    styles.bar,
-                    {
-                      height: maxValue > 0 ? (item.count / maxValue) * chartHeight : 0,
-                      backgroundColor: item.count > 0 ? colors.primary : colors.border
-                    }
+                    styles.chartBar,
+                    { height: (item.count / maxCount) * 60 }
                   ]}
                 />
-                <Text style={[styles.barValue, { color: colors.primary }]}>{item.count}</Text>
               </View>
-              <Text style={[styles.barLabel, themeStyles.textSecondary]}>{item.label}</Text>
+              <Text style={styles.chartLabel}>{item.label}</Text>
             </View>
           ))}
         </View>
@@ -379,527 +446,636 @@ const ProfileScreen = ({ navigation }) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, themeStyles.container]}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, themeStyles.text]}>Loading profile...</Text>
-        </View>
-      </SafeAreaView>
+      <LinearGradient
+        colors={['#0a0a0a', '#1a1a1a']}
+        start={{x: 0, y: 0}}
+        end={{x: 1, y: 1}}
+        style={styles.container}
+      >
+        <StatusBar barStyle="light-content" />
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#4ecdc4" />
+            <Text style={styles.loadingText}>Loading profile...</Text>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#FFFFFF' }]}>
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={['#7B68EE']}
-            tintColor={'#7B68EE'}
-          />
-        }
-      >
-        {/* Header */}
-        <View style={[
-          styles.header, 
-          { 
-            backgroundColor: isDarkMode ? colors.surface : '#FFFFFF', 
-            borderBottomColor: isDarkMode ? colors.border : '#D3D3D3',
-            shadowColor: '#7B68EE',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 6,
-            elevation: 4,
-          }
-        ]}>
-          <View style={styles.headerLeft}>
-            <View style={styles.logoContainer}>
-              <View style={[styles.logo, { backgroundColor: '#7B68EE' }]}>
-                <Ionicons name="person" size={24} color="#ffffff" />
-                <View style={styles.sparkles}>
-                  <Ionicons name="sparkles" size={12} color="#ffffff" />
-                </View>
-              </View>
-            </View>
-            <View style={styles.titleContainer}>
-              <Text style={[styles.title, { color: isDarkMode ? colors.text : '#000000' }]}>Profile</Text>
-              <Text style={[styles.subtitle, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
-                Your product journey dashboard
-              </Text>
-            </View>
-          </View>
-          <View style={styles.headerRight}>
-            <TouchableOpacity style={[styles.iconButton, { backgroundColor: isDarkMode ? 'transparent' : 'transparent' }]} activeOpacity={0.7}>
-              <Ionicons name="notifications-outline" size={20} color={isDarkMode ? colors.textSecondary : '#666666'} />
-            </TouchableOpacity>
+    <LinearGradient
+      colors={['#0a0a0a', '#1a1a1a']}
+      start={{x: 0, y: 0}}
+      end={{x: 1, y: 1}}
+      style={styles.container}
+    >
+      <StatusBar barStyle="light-content" />
+      
+      {/* Floating Background Elements */}
+      {floatingShapes.map((anim, index) => (
+        <Animated.View
+          key={index}
+          style={[
+            styles.floatingShape,
+            {
+              transform: [{
+                translateY: anim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -20],
+                }),
+              }, {
+                rotate: anim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0deg', '180deg'],
+                }),
+              }],
+            },
+            index === 0 && styles.floatingShape1,
+            index === 1 && styles.floatingShape2,
+            index === 2 && styles.floatingShape3,
+          ]}
+        />
+      ))}
+
+      <SafeAreaView style={styles.safeArea}>
+        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+          
+          {/* Header */}
+          <BlurView intensity={20} tint="dark" style={styles.header}>
             <TouchableOpacity 
-              style={[styles.iconButton, { backgroundColor: isDarkMode ? 'transparent' : 'transparent' }]} 
-              onPress={() => navigation.navigate('Settings')}
-              activeOpacity={0.7}
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
             >
-              <Ionicons name="settings-outline" size={20} color={isDarkMode ? colors.textSecondary : '#666666'} />
+              <Ionicons name="arrow-back" size={24} color="white" />
             </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Main Content */}
-        <View style={styles.mainContent}>
-          {/* Progress Steps */}
-          <Animatable.View animation="fadeInUp" duration={800} delay={200}>
-            <View style={styles.progressSteps}>
-              {/* Idea Step - Completed */}
-              <View style={styles.step}>
-                <View style={[
-                  styles.stepIcon, 
-                  styles.stepIconCompleted,
-                  {
-                    backgroundColor: '#7B68EE',
-                    shadowColor: '#7B68EE',
-                    shadowOffset: { width: 0, height: 6 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 15,
-                    elevation: 12,
-                  }
-                ]}>
-                  <Ionicons name="checkmark" size={32} color="#ffffff" />
-                </View>
-                <Text style={[styles.stepLabel, styles.stepLabelCompleted, { color: '#7B68EE' }]}>Idea</Text>
-              </View>
-
-              {/* Analysis Step - Completed */}
-              <View style={styles.step}>
-                <View style={[
-                  styles.stepIcon, 
-                  styles.stepIconCompleted,
-                  {
-                    backgroundColor: '#7B68EE',
-                    shadowColor: '#7B68EE',
-                    shadowOffset: { width: 0, height: 6 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 15,
-                    elevation: 12,
-                  }
-                ]}>
-                  <Ionicons name="checkmark" size={32} color="#ffffff" />
-                </View>
-                <Text style={[styles.stepLabel, styles.stepLabelCompleted, { color: '#7B68EE' }]}>Analysis</Text>
-              </View>
-
-              {/* Launch Step - Active */}
-              <View style={[styles.step, styles.stepActive]}>
-                <View style={[
-                  styles.stepIcon, 
-                  styles.stepIconActive,
-                  {
-                    backgroundColor: '#7B68EE',
-                    shadowColor: '#7B68EE',
-                    shadowOffset: { width: 0, height: 6 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 15,
-                    elevation: 12,
-                  }
-                ]}>
-                  <Ionicons name="rocket" size={32} color="#ffffff" />
-                </View>
-                <Text style={[styles.stepLabel, styles.stepLabelActive, { color: '#666666' }]}>Launch</Text>
-              </View>
-            </View>
-          </Animatable.View>
-
-          {/* Profile Card */}
-          <Animatable.View animation="fadeInUp" duration={800} delay={400}>
-            <View style={[
-              styles.profileCard, 
-              { 
-                backgroundColor: isDarkMode ? colors.surface : '#FFFFFF',
-                shadowColor: '#7B68EE',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.15,
-                shadowRadius: 12,
-                elevation: 8,
+            
+            <Animated.View style={[
+              styles.logo,
+              {
+                shadowColor: logoGlow.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['rgba(78, 205, 196, 0.5)', 'rgba(255, 107, 107, 0.8)'],
+                }),
               }
             ]}>
-              <View style={styles.profileHeader}>
-                <View style={styles.avatarContainer}>
-                  <View style={[styles.avatar, { backgroundColor: '#7B68EE' }]}>
-                    <Text style={styles.avatarText}>
-                      {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.profileInfo}>
-                  <Text style={[styles.profileName, { color: isDarkMode ? colors.text : '#000000' }]}>
-                    {user?.email || 'Product Manager'}
-                  </Text>
-                  <Text style={[styles.profileRole, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
-                    Innovation Explorer
-                  </Text>
-                </View>
-                <TouchableOpacity style={styles.editButton} activeOpacity={0.7}>
-                  <Ionicons name="create-outline" size={20} color={isDarkMode ? colors.textSecondary : '#666666'} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Animatable.View>
+              <LinearGradient
+                colors={['#ff6b6b', '#4ecdc4', '#45b7d1']}
+                start={{x: 0, y: 0}}
+                end={{x: 1, y: 1}}
+                style={styles.logoIcon}
+              >
+                <Ionicons name="person" size={20} color="white" />
+              </LinearGradient>
+              <Text style={styles.logoText}>Profile</Text>
+            </Animated.View>
 
-          {/* Analytics Overview */}
-          <Animatable.View animation="fadeInUp" duration={800} delay={600}>
-            <View style={[
-              styles.analyticsCard, 
-              { 
-                backgroundColor: isDarkMode ? colors.surface : '#FFFFFF',
-                shadowColor: '#7B68EE',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.15,
-                shadowRadius: 12,
-                elevation: 8,
-              }
-            ]}>
-              <Text style={[styles.sectionTitle, { color: isDarkMode ? colors.text : '#000000' }]}>Analytics Overview</Text>
-              
-              <View style={styles.statsGrid}>
-                <View style={styles.statItem}>
-                  <Text style={[styles.statNumber, { color: '#7B68EE' }]}>{stats.totalAnalyses}</Text>
-                  <Text style={[styles.statLabel, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>Total Analyses</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={[styles.statNumber, { color: '#7B68EE' }]}>{stats.thisMonth}</Text>
-                  <Text style={[styles.statLabel, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>This Month</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={[styles.statNumber, { color: '#7B68EE' }]}>{stats.thisWeek}</Text>
-                  <Text style={[styles.statLabel, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>This Week</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={[styles.statNumber, { color: '#7B68EE' }]}>{stats.avgPerWeek}</Text>
-                  <Text style={[styles.statLabel, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>Avg/Week</Text>
-                </View>
-              </View>
-            </View>
-          </Animatable.View>
+            <TouchableOpacity 
+              style={styles.settingsButton}
+              onPress={() => navigation.navigate('Settings')}
+            >
+              <Ionicons name="settings-outline" size={24} color="white" />
+            </TouchableOpacity>
+          </BlurView>
 
-          {/* Settings */}
-          <Animatable.View animation="fadeInUp" duration={800} delay={800}>
-            <View style={[
-              styles.settingsCard, 
-              { 
-                backgroundColor: isDarkMode ? colors.surface : '#FFFFFF',
-                shadowColor: '#7B68EE',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.15,
-                shadowRadius: 12,
-                elevation: 8,
-              }
-            ]}>
-              <Text style={[styles.sectionTitle, { color: isDarkMode ? colors.text : '#000000' }]}>Settings</Text>
-              
-              <View style={styles.settingsList}>
-                <TouchableOpacity 
-                  style={styles.settingItem} 
-                  onPress={() => navigation.navigate('Settings')}
-                  activeOpacity={0.7}
+          {/* Main Content */}
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor="white"
+              />
+            }
+          >
+            
+            {/* Profile Header */}
+            <BlurView intensity={15} tint="dark" style={styles.profileHeader}>
+              <View style={styles.avatarContainer}>
+                <LinearGradient
+                  colors={['#ff6b6b', '#4ecdc4']}
+                  style={styles.avatar}
                 >
-                  <View style={styles.settingLeft}>
-                    <Ionicons name="settings-outline" size={20} color={isDarkMode ? colors.textSecondary : '#666666'} />
-                    <Text style={[styles.settingText, { color: isDarkMode ? colors.text : '#000000' }]}>
-                      App Settings
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color={isDarkMode ? colors.textSecondary : '#9ca3af'} />
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.settingItem} onPress={toggleTheme} activeOpacity={0.7}>
-                  <View style={styles.settingLeft}>
-                    <Ionicons name={isDarkMode ? "moon" : "sunny"} size={20} color={isDarkMode ? colors.textSecondary : '#666666'} />
-                    <Text style={[styles.settingText, { color: isDarkMode ? colors.text : '#000000' }]}>
-                      {isDarkMode ? 'Dark Mode' : 'Light Mode'}
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color={isDarkMode ? colors.textSecondary : '#9ca3af'} />
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.settingItem} onPress={exportAnalyses} activeOpacity={0.7}>
-                  <View style={styles.settingLeft}>
-                    <Ionicons name="download-outline" size={20} color={isDarkMode ? colors.textSecondary : '#666666'} />
-                    <Text style={[styles.settingText, { color: isDarkMode ? colors.text : '#000000' }]}>Export Data</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color={isDarkMode ? colors.textSecondary : '#9ca3af'} />
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.settingItem} onPress={handleSignOut} activeOpacity={0.7}>
-                  <View style={styles.settingLeft}>
-                    <Ionicons name="log-out-outline" size={20} color="#7B68EE" />
-                    <Text style={[styles.settingText, { color: '#7B68EE' }]}>Sign Out</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color={isDarkMode ? colors.textSecondary : '#9ca3af'} />
-                </TouchableOpacity>
+                  <Text style={styles.avatarText}>
+                    {displayName ? displayName.charAt(0).toUpperCase() : 'U'}
+                  </Text>
+                </LinearGradient>
               </View>
-            </View>
-          </Animatable.View>
-        </View>
+              
+              {isEditing ? (
+                <View style={styles.editForm}>
+                  <TextInput
+                    style={styles.input}
+                    value={displayName}
+                    onChangeText={setDisplayName}
+                    placeholder="Display Name"
+                    placeholderTextColor="rgba(255,255,255,0.5)"
+                  />
+                  <TextInput
+                    style={styles.input}
+                    value={company}
+                    onChangeText={setCompany}
+                    placeholder="Company"
+                    placeholderTextColor="rgba(255,255,255,0.5)"
+                  />
+                  <TextInput
+                    style={styles.input}
+                    value={role}
+                    onChangeText={setRole}
+                    placeholder="Role"
+                    placeholderTextColor="rgba(255,255,255,0.5)"
+                  />
+                  <View style={styles.editActions}>
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={() => setIsEditing(false)}
+                    >
+                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.saveButton}
+                      onPress={updateProfile}
+                      disabled={updating}
+                    >
+                      <LinearGradient
+                        colors={['#ff6b6b', '#4ecdc4']}
+                        style={styles.saveButtonGradient}
+                      >
+                        {updating ? (
+                          <ActivityIndicator size="small" color="white" />
+                        ) : (
+                          <Text style={styles.saveButtonText}>Save</Text>
+                        )}
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.profileInfo}>
+                  <MaskedView
+                    style={styles.nameMaskContainer}
+                    maskElement={
+                      <Text style={styles.nameMask}>
+                        {displayName || 'User'}
+                      </Text>
+                    }
+                  >
+                    <LinearGradient
+                      colors={['#ff6b6b', '#4ecdc4']}
+                      start={{x: 0, y: 0}}
+                      end={{x: 1, y: 1}}
+                      style={styles.nameGradient}
+                    />
+                  </MaskedView>
+                  <Text style={styles.email}>{user?.email}</Text>
+                  {company && <Text style={styles.company}>{company}</Text>}
+                  {role && <Text style={styles.role}>{role}</Text>}
+                  
+                  <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={() => setIsEditing(true)}
+                  >
+                    <Ionicons name="pencil" size={16} color="#4ecdc4" />
+                    <Text style={styles.editButtonText}>Edit Profile</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </BlurView>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: isDarkMode ? colors.textSecondary : '#666666' }]}>
-            Powered by OpenAI • Made with <Text style={styles.heart}>❤️</Text> for Product Innovators
-          </Text>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+            {/* Stats Grid */}
+            <View style={styles.statsGrid}>
+              <BlurView intensity={15} tint="dark" style={styles.statCard}>
+                <Ionicons name="analytics" size={24} color="#ff6b6b" />
+                <Text style={styles.statNumber}>{stats.totalAnalyses}</Text>
+                <Text style={styles.statLabel}>Total Analyses</Text>
+              </BlurView>
+              
+              <BlurView intensity={15} tint="dark" style={styles.statCard}>
+                <Ionicons name="calendar" size={24} color="#4ecdc4" />
+                <Text style={styles.statNumber}>{stats.thisMonth}</Text>
+                <Text style={styles.statLabel}>This Month</Text>
+              </BlurView>
+              
+              <BlurView intensity={15} tint="dark" style={styles.statCard}>
+                <Ionicons name="trending-up" size={24} color="#45b7d1" />
+                <Text style={styles.statNumber}>{stats.thisWeek}</Text>
+                <Text style={styles.statLabel}>This Week</Text>
+              </BlurView>
+              
+              <BlurView intensity={15} tint="dark" style={styles.statCard}>
+                <Ionicons name="flash" size={24} color="#feca57" />
+                <Text style={styles.statNumber}>{stats.avgPerWeek}</Text>
+                <Text style={styles.statLabel}>Avg/Week</Text>
+              </BlurView>
+            </View>
+
+            {/* Activity Chart */}
+            {monthlyData.length > 0 && (
+              <BlurView intensity={15} tint="dark" style={styles.chartCard}>
+                <Text style={styles.chartTitle}>Activity Overview</Text>
+                <SimpleBarChart data={monthlyData} />
+              </BlurView>
+            )}
+
+            {/* Favorite Analyses */}
+            {favoriteAnalyses.length > 0 && (
+              <BlurView intensity={15} tint="dark" style={styles.favoritesCard}>
+                <Text style={styles.favoritesTitle}>Favorite Analyses</Text>
+                {favoriteAnalyses.map((analysis, index) => (
+                  <View key={analysis.id} style={styles.favoriteItem}>
+                    <View style={styles.favoriteInfo}>
+                      <Text style={styles.favoriteName}>{analysis.product_name}</Text>
+                      <Text style={styles.favoriteType}>{analysis.analysis_type}</Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => toggleFavorite(analysis.id, true)}
+                    >
+                      <Ionicons name="heart" size={20} color="#ff6b6b" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </BlurView>
+            )}
+
+            {/* Action Buttons */}
+            <View style={styles.actionContainer}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={exportAnalyses}
+              >
+                <BlurView intensity={15} tint="dark" style={styles.actionButtonBlur}>
+                  <Ionicons name="download" size={20} color="#4ecdc4" />
+                  <Text style={styles.actionButtonText}>Export Data</Text>
+                </BlurView>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleSignOut}
+              >
+                <BlurView intensity={15} tint="dark" style={styles.actionButtonBlur}>
+                  <Ionicons name="log-out" size={20} color="#ff6b6b" />
+                  <Text style={styles.actionButtonText}>Sign Out</Text>
+                </BlurView>
+              </TouchableOpacity>
+            </View>
+
+          </ScrollView>
+        </Animated.View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 };
 
-const styles = StyleSheet.create({
+const styles = {
   container: {
     flex: 1,
   },
-  scrollView: {
+  safeArea: {
+    flex: 1,
+  },
+  content: {
     flex: 1,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 16,
   },
   loadingText: {
-    marginTop: 16,
+    color: 'white',
     fontSize: 16,
   },
+  // Floating background elements
+  floatingShape: {
+    position: 'absolute',
+    opacity: 0.1,
+  },
+  floatingShape1: {
+    top: '15%',
+    left: '10%',
+    width: 60,
+    height: 60,
+    backgroundColor: '#ff6b6b',
+    borderRadius: 30,
+  },
+  floatingShape2: {
+    top: '60%',
+    right: '15%',
+    width: 40,
+    height: 40,
+    backgroundColor: '#4ecdc4',
+    borderRadius: 8,
+  },
+  floatingShape3: {
+    bottom: '20%',
+    left: '20%',
+    width: 80,
+    height: 80,
+    backgroundColor: '#45b7d1',
+    borderRadius: 40,
+  },
+  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24, // 1.5rem
-    paddingVertical: 16, // 1rem
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16, // 1rem
-  },
-  logoContainer: {
-    position: 'relative',
-  },
-  logo: {
-    width: 48,
-    height: 48,
-    backgroundColor: '#ef4444',
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  sparkles: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-  },
-  titleContainer: {
-    flexDirection: 'column',
-  },
-  title: {
-    fontSize: 24, // 1.5rem
-    fontWeight: '700',
-    fontFamily: 'System',
-  },
-  subtitle: {
-    fontSize: 14, // 0.875rem
-    fontWeight: '400',
-    fontFamily: 'System',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12, // 0.75rem
-  },
-  iconButton: {
+  backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  mainContent: {
-    maxWidth: 1024, // 64rem
-    width: '100%',
-    alignSelf: 'center',
-    paddingHorizontal: 24, // 1.5rem
-    paddingVertical: 48, // 3rem
-  },
-  progressSteps: {
+  logo: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 32, // 2rem
-    marginBottom: 64, // 4rem
+    gap: 8,
   },
-  step: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 12, // 0.75rem
-  },
-  stepActive: {
-    // Active step styling
-  },
-  stepIcon: {
-    width: 64,
-    height: 64,
-    backgroundColor: '#9ca3af',
-    borderRadius: 32,
+  logoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  stepIconActive: {
-    backgroundColor: '#ef4444',
+  logoText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.5,
   },
-  stepIconCompleted: {
-    backgroundColor: '#22c55e',
+  settingsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  stepLabel: {
-    fontWeight: '500',
-    color: '#9ca3af',
-    fontFamily: 'System',
+  // Content
+  scrollView: {
+    flex: 1,
   },
-  stepLabelActive: {
-    color: '#111827',
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
   },
-  stepLabelCompleted: {
-    color: '#22c55e',
-  },
-  profileCard: {
-    padding: 24,
-    borderRadius: 16,
-    marginBottom: 24, // 1.5rem
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
+  // Profile Header
   profileHeader: {
-    flexDirection: 'row',
+    padding: 24,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
-    gap: 16, // 1rem
+    marginBottom: 24,
   },
   avatarContainer: {
-    position: 'relative',
+    marginBottom: 16,
   },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
-    fontSize: 24,
+    color: 'white',
+    fontSize: 32,
     fontWeight: '700',
-    color: '#ffffff',
-    fontFamily: 'System',
   },
   profileInfo: {
-    flex: 1,
-  },
-  profileName: {
-    fontSize: 20,
-    fontWeight: '700',
-    fontFamily: 'System',
-  },
-  profileRole: {
-    fontSize: 14,
-    fontFamily: 'System',
-    marginTop: 2,
-  },
-  editButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
     alignItems: 'center',
+    width: '100%',
   },
-  analyticsCard: {
-    padding: 24,
-    borderRadius: 16,
-    marginBottom: 24, // 1.5rem
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  nameMaskContainer: {
+    height: 32,
+    marginBottom: 8,
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 16,
-    fontFamily: 'System',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statNumber: {
+  nameMask: {
     fontSize: 24,
     fontWeight: '700',
-    fontFamily: 'System',
+    textAlign: 'center',
+    backgroundColor: 'transparent',
+  },
+  nameGradient: {
+    flex: 1,
+  },
+  email: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  company: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  role: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 14,
+    marginBottom: 16,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(78, 205, 196, 0.3)',
+  },
+  editButtonText: {
+    color: '#4ecdc4',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  // Edit Form
+  editForm: {
+    width: '100%',
+    gap: 12,
+  },
+  input: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    color: 'white',
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  editActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  saveButton: {
+    flex: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  saveButtonGradient: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  // Stats Grid
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 24,
+  },
+  statCard: {
+    width: (width - 52) / 2,
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statNumber: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: '700',
   },
   statLabel: {
+    color: 'rgba(255,255,255,0.7)',
     fontSize: 12,
-    marginTop: 4,
-    fontFamily: 'System',
     textAlign: 'center',
   },
-  settingsCard: {
-    padding: 24,
+  // Chart
+  chartCard: {
+    padding: 20,
     borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    marginBottom: 24,
   },
-  settingsList: {
-    gap: 8, // 0.5rem
+  chartTitle: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+    textAlign: 'center',
   },
-  settingItem: {
+  chartContainer: {
+    height: 100,
+  },
+  chartBars: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-around',
+    height: 80,
+  },
+  chartBarContainer: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  chartBarWrapper: {
+    height: 60,
+    width: 20,
+    justifyContent: 'flex-end',
+  },
+  chartBar: {
+    width: 20,
+    borderRadius: 10,
+    minHeight: 4,
+  },
+  chartLabel: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 10,
+  },
+  // Favorites
+  favoritesCard: {
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    marginBottom: 24,
+  },
+  favoritesTitle: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  favoriteItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16, // 1rem
-    paddingHorizontal: 12, // 0.75rem
-    borderRadius: 8,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
-  settingLeft: {
+  favoriteInfo: {
+    flex: 1,
+  },
+  favoriteName: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  favoriteType: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    textTransform: 'capitalize',
+  },
+  // Actions
+  actionContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  actionButton: {
+    flex: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  actionButtonBlur: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12, // 0.75rem
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
-  settingText: {
-    fontSize: 16, // 1rem
+  actionButtonText: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 16,
     fontWeight: '500',
-    fontFamily: 'System',
   },
-  footer: {
-    textAlign: 'center',
-    paddingVertical: 32, // 2rem
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 14,
-    textAlign: 'center',
-    fontFamily: 'System',
-  },
-  heart: {
-    color: '#ef4444',
-  },
-});
+};
 
 export default ProfileScreen;

@@ -1,82 +1,154 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
-  StyleSheet,
-  ScrollView,
   Text,
-  SafeAreaView,
   TouchableOpacity,
+  ScrollView,
+  StatusBar,
+  Animated,
+  Dimensions,
   Share,
   Linking,
   Alert,
-  Dimensions,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { Ionicons } from '@expo/vector-icons';
-import * as Animatable from 'react-native-animatable';
-import { useTheme } from '../contexts/ThemeContext';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function LaunchScreen({ navigation, route }) {
-  const { colors, styles: themeStyles, isDarkMode } = useTheme();
   const { idea, analysis, usage } = route.params || {};
   const [loading, setLoading] = useState(false);
+  
+  // Animation values
+  const logoGlow = useRef(new Animated.Value(0)).current;
+  const floatingShapes = useRef([
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+  ]).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Extract product name from idea for display
+  const getProductName = (ideaText) => {
+    if (!ideaText) return 'Your Product';
+    const ideaParts = ideaText.split(':');
+    if (ideaParts.length > 1) {
+      return ideaParts[0].trim();
+    }
+    const words = ideaText.trim().split(' ');
+    return words.slice(0, 3).join(' ') + (words.length > 3 ? '...' : '');
+  };
+
+  const productName = getProductName(idea);
 
   const exportOptions = [
     {
       id: 'pdf',
       name: 'Export to PDF',
       icon: 'document-text',
-      description: 'Download a comprehensive analysis report as PDF',
-      color: '#ef4444',
+      description: 'Download comprehensive analysis report',
+      color: '#ff6b6b',
       action: handlePDFExport
     },
     {
       id: 'prd',
       name: 'Draft PRD',
       icon: 'clipboard',
-      description: 'Generate a Product Requirements Document template',
-      color: '#3b82f6',
+      description: 'Generate Product Requirements Document',
+      color: '#4ecdc4',
       action: handlePRDDraft
     },
     {
       id: 'figma',
       name: 'UI Mockups',
       icon: 'color-palette',
-      description: 'Create wireframes and mockups in Figma or similar tools',
-      color: '#8b5cf6',
+      description: 'Create wireframes and mockups',
+      color: '#45b7d1',
       action: handleUIMockups
     },
     {
       id: 'technical',
       name: 'Technical Specs',
       icon: 'code-slash',
-      description: 'Generate technical documentation for dev team',
-      color: '#10b981',
+      description: 'Generate technical documentation',
+      color: '#96ceb4',
       action: handleTechnicalSpecs
     },
     {
       id: 'business',
       name: 'Business Plan',
       icon: 'trending-up',
-      description: 'Create business model and financial projections',
-      color: '#f59e0b',
+      description: 'Create business model and projections',
+      color: '#feca57',
       action: handleBusinessPlan
     },
     {
       id: 'marketing',
       name: 'Marketing Brief',
       icon: 'megaphone',
-      description: 'Draft marketing strategy and campaign materials',
-      color: '#ec4899',
+      description: 'Draft marketing strategy and materials',
+      color: '#ff9ff3',
       action: handleMarketingBrief
     }
   ];
 
+  useEffect(() => {
+    // Start entrance animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+
+    // Logo glow animation
+    const logoAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(logoGlow, {
+          toValue: 1,
+          duration: 3000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(logoGlow, {
+          toValue: 0,
+          duration: 3000,
+          useNativeDriver: false,
+        }),
+      ])
+    );
+    logoAnimation.start();
+
+    // Floating shapes animation
+    floatingShapes.forEach((anim, index) => {
+      const floatingAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(anim, {
+            toValue: 1,
+            duration: 6000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(anim, {
+            toValue: 0,
+            duration: 6000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      setTimeout(() => floatingAnimation.start(), index * 2000);
+    });
+
+    return () => {
+      logoAnimation.stop();
+      floatingShapes.forEach(anim => anim.stopAnimation());
+    };
+  }, []);
+
   async function handlePDFExport() {
     setLoading(true);
     try {
-      // In a real app, you'd integrate with a PDF generation service
       const shareContent = `🚀 Pocket PM Analysis Report\n\n💡 Product Idea:\n${idea}\n\n📊 Analysis:\n${analysis}\n\n📋 Report generated by Pocket PM - AI-powered product analysis\n\nReady to launch your idea!`;
       
       await Share.share({
@@ -92,32 +164,7 @@ export default function LaunchScreen({ navigation, route }) {
   }
 
   async function handlePRDDraft() {
-    const prdTemplate = `📋 PRODUCT REQUIREMENTS DOCUMENT
-
-🎯 Product Vision:
-${idea}
-
-📊 Market Analysis:
-${analysis.substring(0, 200)}...
-
-📋 Key Features:
-• [Feature 1]
-• [Feature 2] 
-• [Feature 3]
-
-👥 Target Users:
-• [User Persona 1]
-• [User Persona 2]
-
-🔧 Technical Requirements:
-• [Tech Requirement 1]
-• [Tech Requirement 2]
-
-📈 Success Metrics:
-• [KPI 1]
-• [KPI 2]
-
-Generated by Pocket PM`;
+    const prdTemplate = `📋 PRODUCT REQUIREMENTS DOCUMENT\n\n🎯 Product Vision:\n${idea}\n\n📊 Market Analysis:\n${analysis.substring(0, 200)}...\n\n📋 Key Features:\n• [Feature 1]\n• [Feature 2]\n• [Feature 3]\n\n👥 Target Users:\n• [User Persona 1]\n• [User Persona 2]\n\n🔧 Technical Requirements:\n• [Tech Requirement 1]\n• [Tech Requirement 2]\n\n📈 Success Metrics:\n• [KPI 1]\n• [KPI 2]\n\nGenerated by Pocket PM`;
 
     try {
       await Share.share({
@@ -143,32 +190,7 @@ Generated by Pocket PM`;
   }
 
   async function handleTechnicalSpecs() {
-    const techSpecs = `⚙️ TECHNICAL SPECIFICATIONS
-
-🎯 Product: ${idea}
-
-🏗️ Architecture Overview:
-• Frontend: [Technology]
-• Backend: [Technology]
-• Database: [Technology]
-• API: [Technology]
-
-📱 Platform Requirements:
-• Web Application
-• Mobile App (iOS/Android)
-• API Integration
-
-🔒 Security Requirements:
-• User Authentication
-• Data Encryption
-• Privacy Compliance
-
-🚀 Deployment:
-• Cloud Infrastructure
-• CI/CD Pipeline
-• Monitoring & Analytics
-
-Generated by Pocket PM`;
+    const techSpecs = `⚙️ TECHNICAL SPECIFICATIONS\n\n🎯 Product: ${idea}\n\n🏗️ Architecture Overview:\n• Frontend: [Technology]\n• Backend: [Technology]\n• Database: [Technology]\n• API: [Technology]\n\n📱 Platform Requirements:\n• Web Application\n• Mobile App (iOS/Android)\n• API Integration\n\n🔒 Security Requirements:\n• User Authentication\n• Data Encryption\n• Privacy Compliance\n\n🚀 Deployment:\n• Cloud Infrastructure\n• CI/CD Pipeline\n• Monitoring & Analytics\n\nGenerated by Pocket PM`;
 
     try {
       await Share.share({
@@ -181,31 +203,7 @@ Generated by Pocket PM`;
   }
 
   async function handleBusinessPlan() {
-    const businessPlan = `💼 BUSINESS PLAN OVERVIEW
-
-🎯 Product: ${idea}
-
-💰 Revenue Model:
-• [Revenue Stream 1]
-• [Revenue Stream 2]
-• [Revenue Stream 3]
-
-📊 Market Opportunity:
-• Market Size: $[X]M
-• Target Market: [Description]
-• Growth Rate: [X]%
-
-💵 Financial Projections (Year 1-3):
-• Year 1: $[X]K revenue
-• Year 2: $[X]K revenue  
-• Year 3: $[X]M revenue
-
-🎯 Go-to-Market Strategy:
-• Launch Phase: [Strategy]
-• Growth Phase: [Strategy]
-• Scale Phase: [Strategy]
-
-Generated by Pocket PM`;
+    const businessPlan = `💼 BUSINESS PLAN OVERVIEW\n\n🎯 Product: ${idea}\n\n💰 Revenue Model:\n• [Revenue Stream 1]\n• [Revenue Stream 2]\n• [Revenue Stream 3]\n\n📊 Market Opportunity:\n• Market Size: $[X]M\n• Target Market: [Description]\n• Growth Rate: [X]%\n\n💵 Financial Projections (Year 1-3):\n• Year 1: $[X]K revenue\n• Year 2: $[X]K revenue\n• Year 3: $[X]K revenue\n\nGenerated by Pocket PM`;
 
     try {
       await Share.share({
@@ -218,36 +216,12 @@ Generated by Pocket PM`;
   }
 
   async function handleMarketingBrief() {
-    const marketingBrief = `📢 MARKETING STRATEGY BRIEF
-
-🎯 Product: ${idea}
-
-👥 Target Audience:
-• Primary: [Demographic]
-• Secondary: [Demographic]
-• Personas: [User Types]
-
-🎨 Brand Positioning:
-• Value Proposition: [Key Message]
-• Unique Selling Points: [USPs]
-• Brand Voice: [Tone & Style]
-
-📱 Marketing Channels:
-• Digital: Social Media, SEO, PPC
-• Content: Blog, Video, Podcasts
-• Partnerships: Influencers, Affiliates
-
-📊 Campaign Metrics:
-• Awareness: [Metrics]
-• Acquisition: [Metrics]
-• Retention: [Metrics]
-
-Generated by Pocket PM`;
+    const marketingBrief = `📢 MARKETING STRATEGY BRIEF\n\n🎯 Product: ${idea}\n\n🎯 Target Audience:\n• [Primary Audience]\n• [Secondary Audience]\n\n📝 Key Messages:\n• [Message 1]\n• [Message 2]\n• [Message 3]\n\n📱 Marketing Channels:\n• Social Media\n• Content Marketing\n• Email Marketing\n• Paid Advertising\n\n📊 Campaign Goals:\n• Brand Awareness\n• Lead Generation\n• User Acquisition\n\nGenerated by Pocket PM`;
 
     try {
       await Share.share({
         message: marketingBrief,
-        title: 'Marketing Strategy - Pocket PM'
+        title: 'Marketing Brief - Pocket PM'
       });
     } catch (error) {
       console.error('Marketing brief failed:', error);
@@ -263,186 +237,213 @@ Generated by Pocket PM`;
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#f8f9fa' }]}>
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View style={[styles.header, { backgroundColor: isDarkMode ? colors.surface : '#ffffff', borderBottomColor: isDarkMode ? colors.border : '#e5e7eb' }]}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity onPress={handleBackToAnalysis} style={styles.backButton} activeOpacity={0.7}>
-              <Ionicons name="arrow-back" size={24} color={isDarkMode ? colors.text : '#111827'} />
+    <LinearGradient
+      colors={['#0a0a0a', '#1a1a1a']}
+      start={{x: 0, y: 0}}
+      end={{x: 1, y: 1}}
+      style={styles.container}
+    >
+      <StatusBar barStyle="light-content" />
+      
+      {/* Floating Background Elements */}
+      {floatingShapes.map((anim, index) => (
+        <Animated.View
+          key={index}
+          style={[
+            styles.floatingShape,
+            {
+              transform: [{
+                translateY: anim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -20],
+                }),
+              }, {
+                rotate: anim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0deg', '180deg'],
+                }),
+              }],
+            },
+            index === 0 && styles.floatingShape1,
+            index === 1 && styles.floatingShape2,
+            index === 2 && styles.floatingShape3,
+          ]}
+        />
+      ))}
+
+      <SafeAreaView style={styles.safeArea}>
+        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+          
+          {/* Header */}
+          <BlurView intensity={20} tint="dark" style={styles.header}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={handleBackToAnalysis}
+            >
+              <Ionicons name="arrow-back" size={24} color="white" />
             </TouchableOpacity>
-            <View style={styles.logoContainer}>
-              <View style={styles.logo}>
-                <Ionicons name="rocket" size={24} color="#ffffff" />
-                <View style={styles.sparkles}>
-                  <Ionicons name="sparkles" size={12} color="#ffffff" />
-                </View>
-              </View>
-            </View>
-            <View style={styles.titleContainer}>
-              <Text style={[styles.title, { color: isDarkMode ? colors.text : '#111827' }]}>Launch Ready</Text>
-              <Text style={[styles.subtitle, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
-                Export and share your project materials
-              </Text>
-            </View>
-          </View>
-          <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.iconButton} onPress={handleNewProject} activeOpacity={0.7}>
-              <Ionicons name="add-outline" size={20} color={isDarkMode ? colors.textSecondary : '#6b7280'} />
+            
+            <Animated.View style={[
+              styles.logo,
+              {
+                shadowColor: logoGlow.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['rgba(78, 205, 196, 0.5)', 'rgba(255, 107, 107, 0.8)'],
+                }),
+              }
+            ]}>
+              <LinearGradient
+                colors={['#ff6b6b', '#4ecdc4', '#45b7d1']}
+                start={{x: 0, y: 0}}
+                end={{x: 1, y: 1}}
+                style={styles.logoIcon}
+              >
+                <Ionicons name="rocket" size={20} color="white" />
+              </LinearGradient>
+              <Text style={styles.logoText}>Launch</Text>
+            </Animated.View>
+
+            <TouchableOpacity 
+              style={styles.newButton}
+              onPress={handleNewProject}
+            >
+              <Ionicons name="add-circle-outline" size={24} color="white" />
             </TouchableOpacity>
-          </View>
-        </View>
+          </BlurView>
 
-        {/* Main Content */}
-        <View style={styles.mainContent}>
-          {/* Progress Steps */}
-          <Animatable.View animation="fadeInUp" duration={800} delay={200}>
-            <View style={styles.progressSteps}>
-              {/* Idea Step - Completed */}
-              <View style={styles.step}>
-                <View style={[styles.stepIcon, styles.stepIconCompleted]}>
-                  <Ionicons name="checkmark" size={32} color="#ffffff" />
-                </View>
-                <Text style={[styles.stepLabel, styles.stepLabelCompleted]}>Idea</Text>
-              </View>
-
-              {/* Analysis Step - Completed */}
-              <View style={styles.step}>
-                <View style={[styles.stepIcon, styles.stepIconCompleted]}>
-                  <Ionicons name="checkmark" size={32} color="#ffffff" />
-                </View>
-                <Text style={[styles.stepLabel, styles.stepLabelCompleted]}>Analysis</Text>
-              </View>
-
-              {/* Launch Step - Active */}
-              <View style={[styles.step, styles.stepActive]}>
-                <View style={[styles.stepIcon, styles.stepIconActive]}>
-                  <Ionicons name="rocket" size={32} color="#ffffff" />
-                </View>
-                <Text style={[styles.stepLabel, styles.stepLabelActive]}>Launch</Text>
-              </View>
-            </View>
-          </Animatable.View>
-
-          {/* Launch Header */}
-          <Animatable.View animation="fadeInUp" duration={800} delay={400}>
-            <View style={styles.launchHeader}>
-              <Text style={styles.launchEmoji}>🚀</Text>
-              <Text style={[styles.launchTitle, { color: isDarkMode ? colors.text : '#111827' }]}>
-                Ready to Launch!
+          {/* Main Content */}
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            
+            {/* Product Title */}
+            <BlurView intensity={15} tint="dark" style={styles.titleContainer}>
+              <MaskedView
+                style={styles.titleMaskContainer}
+                maskElement={
+                  <Text style={styles.titleMask}>
+                    Ready to Launch
+                  </Text>
+                }
+              >
+                <LinearGradient
+                  colors={['#ff6b6b', '#4ecdc4']}
+                  start={{x: 0, y: 0}}
+                  end={{x: 1, y: 1}}
+                  style={styles.titleGradient}
+                />
+              </MaskedView>
+              <Text style={styles.subtitle}>{productName}</Text>
+              <Text style={styles.description}>
+                Transform your analysis into actionable deliverables
               </Text>
-              <Text style={[styles.launchSubtitle, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
-                Your idea has been analyzed. Now let's turn insights into action with professional documents and resources.
-              </Text>
-            </View>
-          </Animatable.View>
+            </BlurView>
 
-          {/* Export Options Grid */}
-          <Animatable.View animation="fadeInUp" duration={800} delay={600}>
-            <View style={styles.exportGrid}>
-              <Text style={[styles.gridTitle, { color: isDarkMode ? colors.text : '#111827' }]}>
-                📋 Export & Share Options
-              </Text>
-              
+            {/* Export Options Grid */}
+            <View style={styles.optionsGrid}>
               {exportOptions.map((option, index) => (
-                <Animatable.View
+                <TouchableOpacity
                   key={option.id}
-                  animation="fadeInUp"
-                  duration={600}
-                  delay={800 + (index * 100)}
+                  style={styles.optionCard}
+                  onPress={option.action}
+                  disabled={loading}
                 >
-                  <TouchableOpacity
-                    style={[
-                      styles.exportCard,
-                      { 
-                        backgroundColor: isDarkMode ? colors.surface : '#ffffff',
-                        borderLeftColor: option.color
-                      }
-                    ]}
-                    onPress={option.action}
-                    activeOpacity={0.8}
-                    disabled={loading}
-                  >
-                    <View style={styles.exportCardHeader}>
-                      <View style={[styles.exportIcon, { backgroundColor: option.color + '15' }]}>
-                        <Ionicons name={option.icon} size={24} color={option.color} />
-                      </View>
-                      <View style={styles.exportCardTitle}>
-                        <Text style={[styles.exportCardName, { color: isDarkMode ? colors.text : '#111827' }]}>
-                          {option.name}
-                        </Text>
-                        <Text style={[styles.exportCardDescription, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
-                          {option.description}
-                        </Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={20} color={isDarkMode ? colors.textSecondary : '#9ca3af'} />
+                  <BlurView intensity={15} tint="dark" style={styles.optionBlur}>
+                    <View style={[styles.optionIcon, { backgroundColor: option.color + '20' }]}>
+                      <Ionicons name={option.icon} size={24} color={option.color} />
                     </View>
-                  </TouchableOpacity>
-                </Animatable.View>
+                    <Text style={styles.optionName}>{option.name}</Text>
+                    <Text style={styles.optionDescription}>{option.description}</Text>
+                  </BlurView>
+                </TouchableOpacity>
               ))}
             </View>
-          </Animatable.View>
 
-          {/* Action Buttons */}
-          <Animatable.View animation="fadeInUp" duration={800} delay={1200}>
-            <View style={styles.actionButtons}>
+            {/* Action Buttons */}
+            <View style={styles.actionContainer}>
               <TouchableOpacity
-                style={[styles.secondaryButton, { borderColor: isDarkMode ? colors.border : '#d1d5db' }]}
+                style={styles.actionButton}
                 onPress={handleBackToAnalysis}
-                activeOpacity={0.8}
               >
-                <Ionicons name="arrow-back" size={20} color={isDarkMode ? colors.text : '#374151'} />
-                <Text style={[styles.secondaryButtonText, { color: isDarkMode ? colors.text : '#374151' }]}>
-                  Back to Analysis
-                </Text>
+                <BlurView intensity={15} tint="dark" style={styles.actionButtonBlur}>
+                  <Ionicons name="analytics" size={20} color="#4ecdc4" />
+                  <Text style={styles.actionButtonText}>Back to Analysis</Text>
+                </BlurView>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
-                style={[styles.primaryButton, { backgroundColor: '#ef4444' }]}
+                style={styles.actionButton}
                 onPress={handleNewProject}
-                activeOpacity={0.8}
               >
-                <Ionicons name="add" size={20} color="#ffffff" />
-                <Text style={styles.primaryButtonText}>New Project</Text>
+                <LinearGradient
+                  colors={['#ff6b6b', '#4ecdc4']}
+                  start={{x: 0, y: 0}}
+                  end={{x: 1, y: 1}}
+                  style={styles.actionButtonGradient}
+                >
+                  <Ionicons name="add-circle" size={20} color="white" />
+                  <Text style={styles.actionButtonGradientText}>New Project</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
-          </Animatable.View>
-        </View>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: isDarkMode ? colors.textSecondary : '#6b7280' }]}>
-            Powered by OpenAI • Made with <Text style={styles.heart}>❤️</Text> for Product Innovators
-          </Text>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          </ScrollView>
+        </Animated.View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = {
   container: {
     flex: 1,
   },
-  scrollView: {
+  safeArea: {
     flex: 1,
   },
+  content: {
+    flex: 1,
+  },
+  // Floating background elements
+  floatingShape: {
+    position: 'absolute',
+    opacity: 0.1,
+  },
+  floatingShape1: {
+    top: '15%',
+    left: '10%',
+    width: 60,
+    height: 60,
+    backgroundColor: '#ff6b6b',
+    borderRadius: 30,
+  },
+  floatingShape2: {
+    top: '60%',
+    right: '15%',
+    width: 40,
+    height: 40,
+    backgroundColor: '#4ecdc4',
+    borderRadius: 8,
+  },
+  floatingShape3: {
+    bottom: '20%',
+    left: '20%',
+    width: 80,
+    height: 80,
+    backgroundColor: '#45b7d1',
+    borderRadius: 40,
+  },
+  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    flex: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
   backButton: {
     width: 40,
@@ -451,213 +452,151 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoContainer: {
-    position: 'relative',
-  },
   logo: {
-    width: 48,
-    height: 48,
-    backgroundColor: '#ef4444',
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  sparkles: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-  },
-  titleContainer: {
-    flexDirection: 'column',
-    flex: 1,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    fontFamily: 'System',
-  },
-  subtitle: {
-    fontSize: 14,
-    fontWeight: '400',
-    fontFamily: 'System',
-  },
-  headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
-  iconButton: {
+  logoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
+  newButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  mainContent: {
-    maxWidth: 1024,
-    width: '100%',
-    alignSelf: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 48,
+  // Content
+  scrollView: {
+    flex: 1,
   },
-  progressSteps: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 32,
-    marginBottom: 48,
-  },
-  step: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 12,
-  },
-  stepActive: {
-    // Active step styling
-  },
-  stepIcon: {
-    width: 64,
-    height: 64,
-    backgroundColor: '#9ca3af',
-    borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  stepIconActive: {
-    backgroundColor: '#ef4444',
-  },
-  stepIconCompleted: {
-    backgroundColor: '#22c55e',
-  },
-  stepLabel: {
-    fontWeight: '500',
-    color: '#9ca3af',
-    fontFamily: 'System',
-  },
-  stepLabelActive: {
-    color: '#111827',
-  },
-  stepLabelCompleted: {
-    color: '#22c55e',
-  },
-  launchHeader: {
-    alignItems: 'center',
-    marginBottom: 48,
-  },
-  launchEmoji: {
-    fontSize: 80,
-    marginBottom: 16,
-  },
-  launchTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 16,
-    fontFamily: 'System',
-  },
-  launchSubtitle: {
-    fontSize: 18,
-    textAlign: 'center',
-    lineHeight: 28,
-    maxWidth: 600,
-    fontFamily: 'System',
-  },
-  exportGrid: {
-    marginBottom: 32,
-  },
-  gridTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 32,
-    fontFamily: 'System',
-  },
-  exportCard: {
+  scrollContent: {
     padding: 20,
-    borderRadius: 16,
-    marginBottom: 16,
-    borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingBottom: 40,
   },
-  exportCardHeader: {
-    flexDirection: 'row',
+  // Title
+  titleContainer: {
+    padding: 24,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
-    gap: 16,
+    marginBottom: 24,
   },
-  exportIcon: {
+  titleMaskContainer: {
+    height: 40,
+    marginBottom: 8,
+  },
+  titleMask: {
+    fontSize: 28,
+    fontWeight: '700',
+    textAlign: 'center',
+    backgroundColor: 'transparent',
+  },
+  titleGradient: {
+    flex: 1,
+  },
+  subtitle: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  description: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  // Options Grid
+  optionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 24,
+  },
+  optionCard: {
+    width: (width - 52) / 2, // Account for padding and gap
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  optionBlur: {
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    minHeight: 140,
+  },
+  optionIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 12,
   },
-  exportCardTitle: {
-    flex: 1,
-  },
-  exportCardName: {
-    fontSize: 18,
+  optionName: {
+    color: 'white',
+    fontSize: 16,
     fontWeight: '600',
-    marginBottom: 4,
-    fontFamily: 'System',
+    textAlign: 'center',
+    marginBottom: 6,
   },
-  exportCardDescription: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: 'System',
+  optionDescription: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 16,
   },
-  actionButtons: {
+  // Actions
+  actionContainer: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 32,
+    gap: 12,
+    marginTop: 8,
   },
-  secondaryButton: {
+  actionButton: {
     flex: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  actionButtonBlur: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
+    paddingHorizontal: 20,
     borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
-  secondaryButtonText: {
+  actionButtonText: {
+    color: 'rgba(255,255,255,0.8)',
     fontSize: 16,
     fontWeight: '500',
-    fontFamily: 'System',
   },
-  primaryButton: {
-    flex: 1,
+  actionButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
+    paddingHorizontal: 20,
   },
-  primaryButtonText: {
-    color: '#ffffff',
+  actionButtonGradientText: {
+    color: 'white',
     fontSize: 16,
-    fontWeight: '500',
-    fontFamily: 'System',
+    fontWeight: '600',
   },
-  footer: {
-    textAlign: 'center',
-    paddingVertical: 32,
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 14,
-    textAlign: 'center',
-    fontFamily: 'System',
-  },
-  heart: {
-    color: '#ef4444',
-  },
-}); 
+}; 
