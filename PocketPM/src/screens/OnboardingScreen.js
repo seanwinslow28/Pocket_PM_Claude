@@ -152,7 +152,7 @@ const OnboardingScreen = () => {
                 {/* Title */}
                 <GradientText
                   colors={['#ff6b6b', '#4ecdc4']}
-                  fontSize={28}
+                  fontSize={24}
                   fontWeight="700"
                   style={styles.title}
                 >
@@ -288,7 +288,7 @@ const styles = {
     width: width,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: 30,
   },
   emojiContainer: {
     width: 120,
@@ -306,6 +306,7 @@ const styles = {
   },
   title: {
     marginBottom: 16,
+    marginHorizontal: 10,
     textAlign: 'center',
   },
   subtitle: {

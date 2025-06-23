@@ -10,11 +10,11 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Database connection
-const pool = new Pool({
+// Database connection (optional)
+const pool = process.env.DATABASE_URL ? new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+}) : null;
 
 // Middleware
 app.use(cors({
@@ -43,6 +43,11 @@ const authenticateToken = (req, res, next) => {
 
 // Database initialization
 const initDB = async () => {
+  if (!pool) {
+    console.log('📊 Database: Disabled (no DATABASE_URL provided)');
+    return;
+  }
+  
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -210,7 +215,7 @@ app.post('/api/analyze', async (req, res) => {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: 'gpt-4o-mini', // Much cheaper: ~100x less than GPT-4
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Analyze this product idea: ${idea}` }

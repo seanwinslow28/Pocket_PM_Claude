@@ -8,6 +8,21 @@ import { BlurView } from 'expo-blur';
 
 const { width } = Dimensions.get('window');
 
+// Function to clean up markdown formatting for better mobile display
+const formatText = (text) => {
+  if (!text) return '';
+  
+  return text
+    // Remove markdown headers (## and ###)
+    .replace(/^#{1,6}\s+/gm, '')
+    // Remove bold markdown (**text**)
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    // Clean up multiple newlines
+    .replace(/\n{3,}/g, '\n\n')
+    // Trim whitespace
+    .trim();
+};
+
 const ChatMessage = ({ message }) => {
   // Animation refs for smooth message appearance
   const messageAnim = useRef(new Animated.Value(0)).current;
@@ -80,7 +95,7 @@ const ChatMessage = ({ message }) => {
           // AI message with glassmorphism effect
           <View style={styles.aiMessageContainer}>
             <BlurView intensity={20} tint="dark" style={styles.aiMessageBlur}>
-              <Text style={styles.aiMessageText}>{message.text}</Text>
+              <Text style={styles.aiMessageText}>{formatText(message.text)}</Text>
             </BlurView>
           </View>
         )}
@@ -97,11 +112,11 @@ const styles = {
   },
   userMessage: {
     flexDirection: 'row-reverse',
-    paddingLeft: 40,
+    paddingLeft: 16,
   },
   aiMessage: {
     flexDirection: 'row',
-    paddingRight: 40,
+    paddingRight: 16,
   },
   avatar: {
     width: 32,
@@ -130,7 +145,7 @@ const styles = {
   },
   messageContent: {
     flex: 1,
-    maxWidth: width * 0.75,
+    maxWidth: width * 0.85,
   },
   userMessageContent: {
     alignItems: 'flex-end',

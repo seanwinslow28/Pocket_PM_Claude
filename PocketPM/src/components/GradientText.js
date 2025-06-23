@@ -33,7 +33,7 @@ const GradientText = ({
 
   try {
     const textLength = children.length;
-    const estimatedWidth = Math.min(textLength * (fontSize * 0.6), width - 40);
+    const estimatedWidth = Math.min(textLength * (fontSize * 0.65), width - 60);
     
     return (
       <View style={[{ alignItems: 'center', justifyContent: 'center' }, style]}>
