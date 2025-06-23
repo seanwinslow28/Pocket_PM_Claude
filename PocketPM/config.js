@@ -14,7 +14,7 @@ export const config = {
   
   // Error logging
   // TODO: Sign up at sentry.io and add your DSN
-  SENTRY_DSN: 'https://c321cdd661a358f3149999daca884196@o4509544004648960.ingest.us.sentry.io/4509544014282752', // TODO: Add your Sentry DSN for error tracking
+  SENTRY_DSN: 
   
   // Feature flags
   USE_MOCK_DATA: false, // Use real backend API
