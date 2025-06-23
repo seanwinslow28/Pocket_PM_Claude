@@ -10,7 +10,7 @@ export const config = {
   // Supabase Configuration
   // TODO: Replace with your actual values from Supabase Dashboard → Settings → API
   SUPABASE_URL: 'https://qdveadgujcflgvpsgtsx.supabase.co',
-  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkdmVhZGd1amNmbGd2cHNndHN4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTIwODY5NiwiZXhwIjoyMDY0Nzg0Njk2fQ.bwQOu_a3ZJeF6nbgV4Vtoo8I7IyO_emuvEGOi2W52Bs', // TODO: Add your actual anon key
+  SUPABASE_ANON_KEY: 
   
   // Error logging
   // TODO: Sign up at sentry.io and add your DSN
