@@ -11,42 +11,23 @@ import {
   Alert,
   Animated,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '../context/AuthContext';
 import GradientText from '../components/GradientText';
-
-// Mock conversation history data
-const mockConversations = [
-  {
-    id: '1',
-    title: 'FinTech Payment Solution',
-    category: 'Product Strategy',
-    emoji: '💳',
-    date: '2024-01-15',
-    preview: 'Discussed mobile payment app features, security protocols, and user onboarding flow...',
-    analysis: 'Key insights: Focus on seamless UX, regulatory compliance, and fraud prevention'
-  },
-  {
-    id: '2',
-    title: 'Healthcare Telemedicine App',
-    category: 'Market Research',
-    emoji: '🏥',
-    date: '2024-01-12',
-    preview: 'Analyzed market opportunities for telehealth platform targeting rural communities...',
-    analysis: 'Market size: $50B+ opportunity, key challenges: regulatory approval, doctor adoption'
-  }
-];
+import ConversationService from '../services/conversationService';
 
 const categories = ['All', 'Product Strategy', 'Market Research', 'User Research', 'Growth', 'Analytics'];
 
 const HistoryScreen = () => {
   const { user } = useAuth();
-  const [conversations, setConversations] = useState(mockConversations);
+  const [conversations, setConversations] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [loading, setLoading] = useState(true);
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -67,6 +48,36 @@ const HistoryScreen = () => {
       }),
     ]).start();
   }, []);
+
+  // Reload conversations when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      loadConversations();
+    }, [user])
+  );
+
+  // Load conversations from storage
+  const loadConversations = async () => {
+    try {
+      setLoading(true);
+      const userId = user?.id || 'default';
+      
+      // Regenerate conversation data on first load to ensure proper titles/previews
+      const userConversations = await ConversationService.regenerateConversationData(userId);
+      setConversations(userConversations);
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+      // Fallback to regular load if regeneration fails
+      try {
+        const userConversations = await ConversationService.getConversations(userId);
+        setConversations(userConversations);
+      } catch (fallbackError) {
+        console.error('Fallback load also failed:', fallbackError);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter conversations based on search and category
   const filteredConversations = conversations.filter(conversation => {
@@ -89,10 +100,16 @@ const HistoryScreen = () => {
   };
 
   const handleConversationPress = (conversation) => {
+    const messageCount = conversation.messages ? conversation.messages.length : 0;
+    const userMessages = conversation.messages ? conversation.messages.filter(m => m.isUser).length : 0;
+    
     Alert.alert(
       conversation.title,
-      `Category: ${conversation.category}\nDate: ${formatDate(conversation.date)}\n\n${conversation.preview}`,
-      [{ text: 'OK' }]
+      `Category: ${conversation.category}\nDate: ${formatDate(conversation.date)}\nMessages: ${messageCount} (${userMessages} from you)\n\n${conversation.preview}\n\nKey insights: ${conversation.analysis}`,
+      [
+        { text: 'OK' },
+        // TODO: In the future, could add "View Full Conversation" button to navigate to a detailed view
+      ]
     );
   };
 
@@ -105,8 +122,15 @@ const HistoryScreen = () => {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            setConversations(prev => prev.filter(conv => conv.id !== id));
+          onPress: async () => {
+            try {
+              const userId = user?.id || 'default';
+              const updatedConversations = await ConversationService.deleteConversation(id, userId);
+              setConversations(updatedConversations);
+            } catch (error) {
+              console.error('Error deleting conversation:', error);
+              Alert.alert('Error', 'Failed to delete conversation. Please try again.');
+            }
           }
         }
       ]
@@ -223,7 +247,12 @@ const HistoryScreen = () => {
             }
           ]}
         >
-          {filteredConversations.length > 0 ? (
+          {loading ? (
+            <View style={styles.loadingState}>
+              <Text style={styles.loadingEmoji}>⏳</Text>
+              <Text style={styles.loadingText}>Loading your conversations...</Text>
+            </View>
+          ) : filteredConversations.length > 0 ? (
             <ScrollView 
               style={styles.conversationsList}
               showsVerticalScrollIndicator={false}
@@ -283,12 +312,18 @@ const HistoryScreen = () => {
             </ScrollView>
           ) : (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>📭</Text>
-              <Text style={styles.emptyTitle}>No conversations found</Text>
+              <Text style={styles.emptyEmoji}>
+                {conversations.length === 0 ? '💬' : '📭'}
+              </Text>
+              <Text style={styles.emptyTitle}>
+                {conversations.length === 0 ? 'No conversations yet' : 'No conversations found'}
+              </Text>
               <Text style={styles.emptyText}>
-                {searchQuery || selectedCategory !== 'All'
+                {conversations.length === 0
+                  ? 'Start analyzing your first business idea in the Chat tab to see your conversation history here!'
+                  : searchQuery || selectedCategory !== 'All'
                   ? 'Try adjusting your search or filter'
-                  : 'Start a conversation in the Chat tab'
+                  : 'All conversations have been filtered out'
                 }
               </Text>
             </View>
@@ -474,6 +509,21 @@ const styles = {
     color: 'rgba(255, 255, 255, 0.6)',
     fontSize: 12,
     fontStyle: 'italic',
+  },
+  loadingState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingEmoji: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  loadingText: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 16,
+    textAlign: 'center',
   },
   emptyState: {
     flex: 1,

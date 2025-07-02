@@ -37,7 +37,6 @@
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "runtimeVersion": "exposdk:51.0.0",
     "owner": "seanpwins"
   }
 }

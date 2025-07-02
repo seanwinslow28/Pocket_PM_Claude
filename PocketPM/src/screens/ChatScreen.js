@@ -21,10 +21,13 @@ import TypingIndicator from '../components/TypingIndicator';
 import QuickPrompts from '../components/QuickPrompts';
 import GradientText from '../components/GradientText';
 import ApiService from '../services/aiService'; // Your existing backend service
+import ConversationService from '../services/conversationService';
+import { useAuth } from '../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 
 const ChatScreen = () => {
+  const { user } = useAuth();
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -35,6 +38,8 @@ const ChatScreen = () => {
   ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [currentChunkedAnalysis, setCurrentChunkedAnalysis] = useState(null);
+  const [conversationSaved, setConversationSaved] = useState(false);
   const scrollViewRef = useRef(null);
   
   // Animation values
@@ -108,13 +113,47 @@ const ChatScreen = () => {
       const response = await ApiService.analyzeIdea(currentInput);
       
       if (response.success) {
-        const aiResponse = {
-          id: Date.now() + 1,
-          text: response.data.analysis,
-          isUser: false,
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, aiResponse]);
+        const analysisData = response.data.analysis;
+        
+        // Check if this is a chunked response
+        if (analysisData.isChunked) {
+          setCurrentChunkedAnalysis(analysisData);
+          
+          const firstChunk = analysisData.chunks[0];
+          const aiResponse = {
+            id: Date.now() + 1,
+            text: firstChunk.content,
+            isUser: false,
+            timestamp: new Date(),
+            chunkTitle: firstChunk.title,
+            chunkedData: {
+              analysisId: analysisData.ideaTitle,
+              currentChunk: 0,
+              totalChunks: analysisData.totalChunks,
+              nextPrompt: firstChunk.nextPrompt
+            }
+          };
+          setMessages(prev => {
+            const updatedMessages = [...prev, aiResponse];
+            // Auto-save conversation for first chunk
+            saveConversationAfterResponse(updatedMessages);
+            return updatedMessages;
+          });
+        } else {
+          // Handle non-chunked responses (backward compatibility)
+          const aiResponse = {
+            id: Date.now() + 1,
+            text: analysisData,
+            isUser: false,
+            timestamp: new Date(),
+          };
+          setMessages(prev => {
+            const updatedMessages = [...prev, aiResponse];
+            // Auto-save conversation when AI response is received
+            saveConversationAfterResponse(updatedMessages);
+            return updatedMessages;
+          });
+        }
       } else {
         Alert.alert('Error', response.error || 'Failed to get AI response. Please try again.');
       }
@@ -124,6 +163,74 @@ const ChatScreen = () => {
     } finally {
       setIsTyping(false);
     }
+  };
+
+  const handleMessageAction = async (action, data) => {
+    if (action === 'showNext' && currentChunkedAnalysis) {
+      setIsTyping(true);
+      
+      // Simulate a brief delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const nextChunkIndex = data.currentChunk + 1;
+      const nextChunk = currentChunkedAnalysis.chunks[nextChunkIndex];
+      
+      if (nextChunk) {
+        const aiResponse = {
+          id: Date.now(),
+          text: nextChunk.content,
+          isUser: false,
+          timestamp: new Date(),
+          chunkTitle: nextChunk.title,
+          chunkedData: {
+            analysisId: currentChunkedAnalysis.ideaTitle,
+            currentChunk: nextChunkIndex,
+            totalChunks: currentChunkedAnalysis.totalChunks,
+            nextPrompt: nextChunk.nextPrompt
+          }
+        };
+        setMessages(prev => {
+          const updatedMessages = [...prev, aiResponse];
+          // Auto-save conversation after each chunk
+          saveConversationAfterResponse(updatedMessages);
+          return updatedMessages;
+        });
+      }
+      
+      setIsTyping(false);
+    }
+  };
+
+  // Save conversation after AI response
+  const saveConversationAfterResponse = async (currentMessages) => {
+    try {
+      if (currentMessages.length >= 2 && !conversationSaved) {
+        const userId = user?.id || 'default';
+        await ConversationService.saveConversation(currentMessages, userId);
+        setConversationSaved(true);
+      } else if (currentMessages.length >= 2 && conversationSaved) {
+        // Update existing conversation
+        const userId = user?.id || 'default';
+        await ConversationService.saveConversation(currentMessages, userId);
+      }
+    } catch (error) {
+      console.error('Error saving conversation:', error);
+    }
+  };
+
+  // Start a new conversation
+  const startNewConversation = () => {
+    setMessages([
+      {
+        id: 1,
+        text: "Hello! What ideas would you like to share with me today?",
+        isUser: false,
+        timestamp: new Date(),
+      }
+    ]);
+    setInputText('');
+    setCurrentChunkedAnalysis(null);
+    setConversationSaved(false);
   };
 
   const handleQuickPrompt = (prompt) => {
@@ -190,6 +297,16 @@ const ChatScreen = () => {
             </LinearGradient>
             <Text style={styles.logoText}>Pocket PM</Text>
           </Animated.View>
+          
+          {/* New Chat Button - only show if conversation has been saved */}
+          {conversationSaved && (
+            <TouchableOpacity
+              style={styles.newChatButton}
+              onPress={startNewConversation}
+            >
+              <Text style={styles.newChatText}>+ New</Text>
+            </TouchableOpacity>
+          )}
         </BlurView>
 
         {/* Main Content with Keyboard Avoidance */}
@@ -227,7 +344,11 @@ const ChatScreen = () => {
 
             {/* Messages */}
             {messages.map(message => (
-              <ChatMessage key={message.id} message={message} />
+              <ChatMessage 
+                key={message.id} 
+                message={message} 
+                onAction={handleMessageAction}
+              />
             ))}
             
             {/* Typing Indicator */}
@@ -319,6 +440,7 @@ const styles = {
   header: {
     paddingVertical: 15,
     paddingTop: 20, // Extra padding for camera area
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     borderBottomWidth: 1,
@@ -347,6 +469,21 @@ const styles = {
     fontSize: 22,
     fontWeight: '700',
     letterSpacing: -0.5,
+  },
+  newChatButton: {
+    position: 'absolute',
+    right: 16,
+    backgroundColor: 'rgba(255, 107, 107, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 107, 107, 0.3)',
+  },
+  newChatText: {
+    color: '#ff6b6b',
+    fontSize: 14,
+    fontWeight: '600',
   },
   // Chat
   chatContainer: {

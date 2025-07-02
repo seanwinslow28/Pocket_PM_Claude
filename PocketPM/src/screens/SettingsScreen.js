@@ -10,6 +10,8 @@ import {
   Switch,
   Alert,
   Animated,
+  TextInput,
+  Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -17,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '../context/AuthContext';
 import GradientText from '../components/GradientText';
+import { configManager } from '../../config';
 
 const settingsData = [
   {
@@ -44,6 +47,14 @@ const settingsData = [
     ]
   },
   {
+    section: 'Developer',
+    items: [
+      { id: 'mockData', title: 'Use Mock Data', subtitle: 'Use dummy data instead of real API calls', icon: '🧪', type: 'toggle', value: true },
+      { id: 'apiKey', title: 'OpenAI API Key', subtitle: 'Enter your API key for real responses', icon: '🔑', type: 'action' },
+      { id: 'testConnection', title: 'Test API Connection', subtitle: 'Verify your API key works', icon: '🔗', type: 'action' },
+    ]
+  },
+  {
     section: 'About',
     items: [
       { id: 'version', title: 'App Version', subtitle: '1.0.0 (Build 1)', icon: 'ℹ️', type: 'info' },
@@ -56,6 +67,9 @@ const settingsData = [
 const SettingsScreen = () => {
   const { user, logout, updateUser } = useAuth();
   const [settings, setSettings] = useState(settingsData);
+  const [apiKeyModalVisible, setApiKeyModalVisible] = useState(false);
+  const [tempApiKey, setTempApiKey] = useState('');
+  const [currentApiKey, setCurrentApiKey] = useState('');
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -75,19 +89,55 @@ const SettingsScreen = () => {
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Load developer settings
+    loadDeveloperSettings();
   }, []);
 
-  const handleToggle = (sectionIndex, itemIndex, newValue) => {
+  const loadDeveloperSettings = async () => {
+    try {
+      const storedSettings = await configManager.getStoredSettings();
+      const apiKey = configManager.getConfig().OPENAI_API_KEY;
+      
+      setCurrentApiKey(apiKey || '');
+      
+      // Update settings array with current values
+      const newSettings = [...settings];
+      const developerSection = newSettings.find(section => section.section === 'Developer');
+      if (developerSection) {
+        const mockDataItem = developerSection.items.find(item => item.id === 'mockData');
+        if (mockDataItem) {
+          mockDataItem.value = storedSettings.useMockData ?? true;
+        }
+        
+        const apiKeyItem = developerSection.items.find(item => item.id === 'apiKey');
+        if (apiKeyItem) {
+          apiKeyItem.subtitle = apiKey ? '••••••••••••••••' : 'Enter your API key for real responses';
+        }
+      }
+      setSettings(newSettings);
+    } catch (error) {
+      console.log('Error loading developer settings:', error);
+    }
+  };
+
+  const handleToggle = async (sectionIndex, itemIndex, newValue) => {
     const newSettings = [...settings];
     newSettings[sectionIndex].items[itemIndex].value = newValue;
     setSettings(newSettings);
     
-    // Here you would typically save to AsyncStorage or API
     const itemId = newSettings[sectionIndex].items[itemIndex].id;
-    console.log(`Toggle ${itemId}: ${newValue}`);
+    
+    // Handle developer settings
+    if (itemId === 'mockData') {
+      await configManager.saveSetting('useMockData', newValue);
+      console.log(`Mock data mode: ${newValue ? 'enabled' : 'disabled'}`);
+    } else {
+      console.log(`Toggle ${itemId}: ${newValue}`);
+    }
   };
 
-  const handleActionPress = (item) => {
+  const handleActionPress = async (item) => {
     switch (item.id) {
       case 'profile':
         Alert.alert('Edit Profile', 'Profile editing feature coming soon!');
@@ -120,8 +170,60 @@ const SettingsScreen = () => {
       case 'privacy':
         Alert.alert('Privacy Policy', 'Opening privacy policy...');
         break;
+      case 'apiKey':
+        setTempApiKey(currentApiKey);
+        setApiKeyModalVisible(true);
+        break;
+      case 'testConnection':
+        await testApiConnection();
+        break;
       default:
         console.log(`Action pressed: ${item.id}`);
+    }
+  };
+
+  const saveApiKey = async () => {
+    try {
+      await configManager.saveSetting('openAiApiKey', tempApiKey);
+      setCurrentApiKey(tempApiKey);
+      setApiKeyModalVisible(false);
+      
+      // Update the subtitle in settings
+      await loadDeveloperSettings();
+      
+      Alert.alert(
+        'API Key Saved',
+        tempApiKey ? 'Your OpenAI API key has been saved successfully.' : 'API key has been removed.',
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save API key. Please try again.');
+    }
+  };
+
+  const testApiConnection = async () => {
+    const apiKey = configManager.getConfig().OPENAI_API_KEY;
+    
+    if (!apiKey) {
+      Alert.alert('No API Key', 'Please enter your OpenAI API key first.');
+      return;
+    }
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/models', {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+        },
+      });
+
+      if (response.ok) {
+        Alert.alert('✅ Connection Successful', 'Your OpenAI API key is working correctly!');
+      } else {
+        const errorData = await response.json();
+        Alert.alert('❌ Connection Failed', `API Error: ${errorData.error?.message || 'Invalid API key'}`);
+      }
+    } catch (error) {
+      Alert.alert('❌ Connection Failed', 'Could not connect to OpenAI. Please check your internet connection.');
     }
   };
 
@@ -281,6 +383,59 @@ const SettingsScreen = () => {
           </TouchableOpacity>
         </Animated.View>
       </SafeAreaView>
+
+      {/* API Key Modal */}
+      <Modal
+        visible={apiKeyModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setApiKeyModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <BlurView intensity={40} tint="dark" style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>OpenAI API Key</Text>
+              <Text style={styles.modalSubtitle}>
+                Enter your OpenAI API key to use real AI responses instead of mock data.
+              </Text>
+              
+              <TextInput
+                style={styles.apiKeyInput}
+                value={tempApiKey}
+                onChangeText={setTempApiKey}
+                placeholder="sk-..."
+                placeholderTextColor="rgba(255,255,255,0.5)"
+                secureTextEntry={true}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setApiKeyModalVisible(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.saveButton]}
+                  onPress={saveApiKey}
+                >
+                  <LinearGradient
+                    colors={['#4ecdc4', '#45b7d1']}
+                    start={{x: 0, y: 0}}
+                    end={{x: 1, y: 1}}
+                    style={styles.saveButtonGradient}
+                  >
+                    <Text style={styles.saveButtonText}>Save</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BlurView>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 };
@@ -449,14 +604,88 @@ const styles = {
   },
   logoutButton: {
     backgroundColor: 'rgba(255, 107, 107, 0.2)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 107, 107, 0.3)',
     paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 107, 107, 0.4)',
   },
   logoutText: {
     color: '#ff6b6b',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '85%',
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  modalContent: {
+    padding: 24,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  },
+  modalTitle: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  apiKeyInput: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    color: 'white',
+    fontSize: 16,
+    marginBottom: 24,
+    fontFamily: 'monospace',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  cancelButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  cancelButtonText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  saveButton: {
+    overflow: 'hidden',
+  },
+  saveButtonGradient: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },

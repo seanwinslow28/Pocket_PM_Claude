@@ -2,28 +2,34 @@
 // Complete message component with proper animations and styling
 
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated, Dimensions } from 'react-native';
+import { View, Text, Animated, Dimensions, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 
 const { width } = Dimensions.get('window');
 
-// Function to clean up markdown formatting for better mobile display
-const formatText = (text) => {
+// Function to clean up text formatting for better mobile display
+const formatText = (text, isChunkedMessage = false) => {
   if (!text) return '';
   
-  return text
-    // Remove markdown headers (## and ###)
-    .replace(/^#{1,6}\s+/gm, '')
-    // Remove bold markdown (**text**)
+  let formattedText = text
+    // Remove problematic characters that show as diamonds
+    .replace(/[^\w\s\n\r\u00A0-\uFFFF.,!?;:()\-\[\]{}'"/$%&*+=<>@#\|\\~`^]/g, '')
+    // Remove any section break artifacts
+    .replace(/===.*?===/g, '')
+    // Keep bold markdown for emphasis but clean it up
     .replace(/\*\*(.*?)\*\*/g, '$1')
     // Clean up multiple newlines
     .replace(/\n{3,}/g, '\n\n')
+    // Remove any leftover markdown headers
+    .replace(/^#{1,6}\s+/gm, '')
     // Trim whitespace
     .trim();
+  
+  return formattedText;
 };
 
-const ChatMessage = ({ message }) => {
+const ChatMessage = ({ message, onAction }) => {
   // Animation refs for smooth message appearance
   const messageAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
@@ -95,7 +101,34 @@ const ChatMessage = ({ message }) => {
           // AI message with glassmorphism effect
           <View style={styles.aiMessageContainer}>
             <BlurView intensity={20} tint="dark" style={styles.aiMessageBlur}>
-              <Text style={styles.aiMessageText}>{formatText(message.text)}</Text>
+              {/* Chunked Message with Title */}
+              {message.chunkedData ? (
+                <>
+                  <Text style={styles.chunkTitle}>{message.chunkTitle || 'Analysis'}</Text>
+                  <Text style={styles.aiMessageText}>{formatText(message.text, true)}</Text>
+                </>
+              ) : (
+                <Text style={styles.aiMessageText}>{formatText(message.text)}</Text>
+              )}
+              
+              {/* Action Button for Chunked Messages */}
+              {message.chunkedData && message.chunkedData.nextPrompt && onAction && (
+                <TouchableOpacity 
+                  style={styles.actionButton}
+                  onPress={() => onAction('showNext', message.chunkedData)}
+                >
+                  <LinearGradient
+                    colors={['#4ecdc4', '#45b7d1']}
+                    start={{x: 0, y: 0}}
+                    end={{x: 1, y: 1}}
+                    style={styles.actionButtonGradient}
+                  >
+                    <Text style={styles.actionButtonText}>
+                      {message.chunkedData.nextPrompt}
+                    </Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              )}
             </BlurView>
           </View>
         )}
@@ -194,6 +227,34 @@ const styles = {
     fontSize: 16,
     lineHeight: 22,
     fontWeight: '400',
+  },
+  chunkTitle: {
+    color: 'white',
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: '700',
+    marginBottom: 12,
+    textAlign: 'left',
+  },
+  actionButton: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+  },
+  actionButtonGradient: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    shadowColor: 'rgba(69, 183, 209, 0.4)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  actionButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 };
 
