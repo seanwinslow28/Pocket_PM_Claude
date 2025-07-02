@@ -22,6 +22,7 @@ import QuickPrompts from '../components/QuickPrompts';
 import GradientText from '../components/GradientText';
 import ApiService from '../services/aiService'; // Your existing backend service
 import ConversationService from '../services/conversationService';
+import LoggingService from '../services/loggingService';
 import { useAuth } from '../context/AuthContext';
 
 const { width } = Dimensions.get('window');
@@ -40,6 +41,7 @@ const ChatScreen = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [currentChunkedAnalysis, setCurrentChunkedAnalysis] = useState(null);
   const [conversationSaved, setConversationSaved] = useState(false);
+  const [sessionId] = useState(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const scrollViewRef = useRef(null);
   
   // Animation values
@@ -88,10 +90,23 @@ const ChatScreen = () => {
     });
 
     return () => {
+      // Log conversation completion when user leaves the screen
+      if (conversationSaved && messages.length > 1) {
+        const userId = user?.id || 'default';
+        LoggingService.logConversationEnd(messages, {
+          sessionId: sessionId,
+          userId: userId,
+          appVersion: '1.0.0',
+          reason: 'screen_unmount'
+        }).catch(error => {
+          console.error('Error logging conversation end on unmount:', error);
+        });
+      }
+      
       logoAnimation.stop();
       floatingShapes.forEach(anim => anim.stopAnimation());
     };
-  }, []);
+  }, [conversationSaved, messages, sessionId, user]);
 
   const sendMessage = async () => {
     if (!inputText.trim()) return;
@@ -208,10 +223,26 @@ const ChatScreen = () => {
         const userId = user?.id || 'default';
         await ConversationService.saveConversation(currentMessages, userId);
         setConversationSaved(true);
+        
+        // Log to n8n for AI evaluation (first time conversation is saved)
+        await LoggingService.logRealTimeUpdate(currentMessages, {
+          sessionId: sessionId,
+          userId: userId,
+          appVersion: '1.0.0',
+          isFirstSave: true
+        });
       } else if (currentMessages.length >= 2 && conversationSaved) {
         // Update existing conversation
         const userId = user?.id || 'default';
         await ConversationService.saveConversation(currentMessages, userId);
+        
+        // Log updated conversation to n8n
+        await LoggingService.logRealTimeUpdate(currentMessages, {
+          sessionId: sessionId,
+          userId: userId,
+          appVersion: '1.0.0',
+          isUpdate: true
+        });
       }
     } catch (error) {
       console.error('Error saving conversation:', error);
@@ -219,7 +250,18 @@ const ChatScreen = () => {
   };
 
   // Start a new conversation
-  const startNewConversation = () => {
+  const startNewConversation = async () => {
+    // Log the completion of the current conversation before starting new one
+    if (conversationSaved && messages.length > 1) {
+      const userId = user?.id || 'default';
+      await LoggingService.logConversationEnd(messages, {
+        sessionId: sessionId,
+        userId: userId,
+        appVersion: '1.0.0',
+        reason: 'new_conversation_started'
+      });
+    }
+    
     setMessages([
       {
         id: 1,
